@@ -6,6 +6,7 @@
 
 use crate::{
     bot::Bot,
+    coord::Coord,
     map::{Command, Map},
     shrink::calculate_shrink_location,
 };
@@ -187,7 +188,7 @@ impl Game {
         false
     }
 
-    fn bomb_explosion_locations(&self, location: (usize, usize)) -> Vec<(usize, usize)> {
+    fn bomb_explosion_locations(&self, location: Coord) -> Vec<Coord> {
         // This function returns the locations that will be affected by a bomb explosion at the given location.
         // It returns the center and all 4 directions (up, down, left, right) within the bomb range.
 
@@ -202,21 +203,21 @@ impl Game {
         // XXX9XXX
         // XXX XXX
         let mut locations = vec![location];
-        let (x, y) = location;
+        let loc = Some(location);
+        let mut left = loc;
+        let mut right = loc;
+        let mut up = loc;
+        let mut down = loc;
 
-        for i in 1..=self.bomb_range {
-            if x >= i {
-                locations.push((x - i, y)); // Left
-            }
-            if x + i < self.width {
-                locations.push((x + i, y)); // Right
-            }
-            if y >= i {
-                locations.push((x, y - i)); // Up
-            }
-            if y + i < self.height {
-                locations.push((x, y + i)); // Down
-            }
+        for _ in 1..=self.bomb_range {
+            left = left.and_then(|l| l.try_move_left());
+            right = right.and_then(|l| l.try_move_right());
+            up = up.and_then(|l| l.try_move_up());
+            down = down.and_then(|l| l.try_move_down());
+            locations.extend(left);
+            locations.extend(up);
+            locations.extend(right);
+            locations.extend(down);
         }
 
         locations
@@ -293,54 +294,63 @@ mod tests {
     #[test]
     fn test_bomb_explosion_center() {
         let game = setup_game(7, 7, 2);
-        let loc = (3, 3);
-        let mut result = game.bomb_explosion_locations(loc);
-        result.sort();
-        let mut expected = vec![
-            (3, 3), // center
-            (1, 3),
-            (2, 3), // up
-            (5, 3),
-            (4, 3), // down
-            (3, 1),
-            (3, 2), // left
-            (3, 5),
-            (3, 4), // right
+        let loc = Coord::from(3, 3);
+        let result = game.bomb_explosion_locations(loc);
+        let expected = vec![
+            Coord::from(3, 3), // center
+            Coord::from(2, 3),
+            Coord::from(3, 2), // up
+            Coord::from(4, 3),
+            Coord::from(3, 4), // down
+            Coord::from(1, 3),
+            Coord::from(3, 1), // left
+            Coord::from(5, 3),
+            Coord::from(3, 5), // right
         ];
-        expected.sort();
         assert_eq!(result, expected);
     }
 
     #[test]
     fn test_bomb_explosion_corner() {
         let game = setup_game(5, 5, 2);
-        let loc = (0, 0);
-        let mut result = game.bomb_explosion_locations(loc);
-        result.sort();
-        let mut expected = vec![(0, 0), (2, 0), (0, 2), (1, 0), (0, 1)];
-        expected.sort();
+        let loc = Coord::from(0, 0);
+        let result = game.bomb_explosion_locations(loc);
+        let expected = vec![
+            Coord::from(0, 0),
+            Coord::from(1, 0),
+            Coord::from(0, 1),
+            Coord::from(2, 0),
+            Coord::from(0, 2),
+        ];
         assert_eq!(result, expected);
     }
 
     #[test]
     fn test_bomb_explosion_edge() {
         let game = setup_game(5, 5, 1);
-        let loc = (0, 2);
-        let mut result = game.bomb_explosion_locations(loc);
-        result.sort();
-        let mut expected = vec![(0, 2), (1, 2), (0, 1), (0, 3)];
-        expected.sort();
+        let loc = Coord::from(0, 2);
+        let result = game.bomb_explosion_locations(loc);
+        let expected = vec![
+            Coord::from(0, 2),
+            Coord::from(0, 1),
+            Coord::from(1, 2),
+            Coord::from(0, 3),
+        ];
         assert_eq!(result, expected);
     }
 
     #[test]
     fn test_bomb_explosion_range_1() {
         let game = setup_game(5, 5, 1);
-        let loc = (2, 2);
-        let mut result = game.bomb_explosion_locations(loc);
-        result.sort();
-        let mut expected = vec![(2, 2), (1, 2), (3, 2), (2, 1), (2, 3)];
-        expected.sort();
+        let loc = Coord::from(2, 2);
+        let result = game.bomb_explosion_locations(loc);
+        let expected = vec![
+            Coord::from(2, 2),
+            Coord::from(1, 2),
+            Coord::from(2, 1),
+            Coord::from(3, 2),
+            Coord::from(2, 3),
+        ];
         assert_eq!(result, expected);
     }
 }

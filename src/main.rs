@@ -1,4 +1,5 @@
 mod bot;
+mod coord;
 mod game;
 mod map;
 mod shrink;

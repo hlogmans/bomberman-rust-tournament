@@ -1,13 +1,17 @@
+use crate::coord::Col;
+use crate::coord::Coord;
+use crate::coord::Row;
+
 // a player has a name, and a position on the map.
 pub struct Player {
     pub name: String,
-    pub position: (usize, usize), // (row, column)
+    pub position: Coord, // (row, column)
 }
 
 // a bomb item has a position on the map, and a timer that counts down to explosion.
 pub struct Bomb {
-    pub position: (usize, usize), // (row, column)
-    pub timer: usize,             // counts down to explosion, starts at 3
+    pub position: Coord, // (row, column)
+    pub timer: usize,    // counts down to explosion, starts at 3
 }
 
 // a map is a 2D vector of characters. But also contains a list of players and a turn number.
@@ -19,6 +23,13 @@ pub struct Map {
 }
 
 impl Map {
+    fn new() -> Self {
+        Self {
+            grid: Vec::new(),
+            players: Vec::new(),
+            bombs: Vec::new(),
+        }
+    }
     pub fn create(width: usize, height: usize, playernames: Vec<String>) -> Self {
         // at least 2 players, at most 4 players
         if playernames.len() < 2 || playernames.len() > 4 {
@@ -41,17 +52,17 @@ impl Map {
         // the third player at (height - 2, 1), and the fourth player at (height - 2, width - 2).
         // If there are less than 4 players, the remaining positions will not be used.
         let player_locations = vec![
-            (1, 1),
-            (1, width - 2),
-            (height - 2, 1),
-            (height - 2, width - 2),
+            Coord::new(Col::new(1), Row::new(1)),
+            Coord::new(Col::new(1), Row::new(width - 2)),
+            Coord::new(Col::new(height - 2), Row::new(1)),
+            Coord::new(Col::new(height - 2), Row::new(width - 2)),
         ];
 
         // Create a new map with the given width and height, filled with destructables
 
         let grid = prepare_grid(width, height);
 
-        let map = Map {
+        let mut map = Map {
             grid,
             players: playernames
                 .iter()
@@ -66,15 +77,14 @@ impl Map {
         };
 
         // remove_destructables_around_users in a 3x3 area
-        grid = remove_destructables_around_users(
-            grid,
+        map.remove_destructables_around_users(
             map.players.iter().map(|player| player.position).collect(),
         );
 
         map
     }
 
-    pub fn clear_destructable(&mut self, location: (usize, usize)) {
+    pub fn clear_destructable(&mut self, location: Coord) {
         // Clear the destructable cell at the given location
         if self.cell_type(location) == CellType::Destroyable {
             // If the cell is destructable, clear it
@@ -97,11 +107,13 @@ impl Map {
     }
 
     // get the BlockType at a given position
-    fn cell_type(&self, position: (usize, usize)) -> CellType {
-        if position.0 >= self.height() || position.1 >= self.width() {
+    fn cell_type(&self, position: Coord) -> CellType {
+        let row = position.row.get();
+        let col = position.col.get();
+        if row >= self.height() || col >= self.width() {
             return CellType::Wall; // Out of bounds is treated as a wall
         }
-        match self.grid[position.0][position.1] {
+        match self.grid[position.row.get()][position.col.get()] {
             ' ' => CellType::Empty,
             'B' => CellType::Bomb,
             'W' => CellType::Wall,
@@ -111,8 +123,8 @@ impl Map {
         }
     }
 
-    fn set_cell(&mut self, position: (usize, usize), cell_type: CellType) {
-        if position.0 < self.height() && position.1 < self.width() {
+    fn set_cell(&mut self, position: Coord, cell_type: CellType) {
+        if position.is_valid(self.width(), self.height()) {
             let char = match cell_type {
                 CellType::Empty => ' ',
                 CellType::Bomb => 'B',
@@ -122,7 +134,7 @@ impl Map {
                     "Cannot set this cell type directly, use appropriate methods for walls or destroyable cells"
                 ),
             };
-            self.grid[position.0][position.1] = char;
+            self.grid[position.row.get()][position.col.get()] = char;
         }
     }
 
@@ -131,7 +143,7 @@ impl Map {
     }
 
     /// Get the index of the player at a specific location. The index is the nth record in the players vector.
-    pub fn get_player_index_at_location(&self, location: (usize, usize)) -> Option<usize> {
+    pub fn get_player_index_at_location(&self, location: Coord) -> Option<usize> {
         // Find the player at the given location
         for (index, player) in self.players.iter().enumerate() {
             if player.position == location {
@@ -149,11 +161,11 @@ impl Map {
         self.players.get(no).map(|p| p.name.clone())
     }
 
-    fn get_player_position(&self, no: usize) -> Option<(usize, usize)> {
+    fn get_player_position(&self, no: usize) -> Option<Coord> {
         self.get_player(no).map(|p| p.position)
     }
 
-    fn set_player_position(&mut self, no: usize, new_position: (usize, usize)) {
+    fn set_player_position(&mut self, no: usize, new_position: Coord) {
         // Find the player and update their position
         if let Some(player) = self.get_player_mut(no) {
             player.position = new_position;
@@ -163,7 +175,7 @@ impl Map {
         // For now, we do nothing
     }
 
-    fn add_bomb(&mut self, position: (usize, usize)) {
+    fn add_bomb(&mut self, position: Coord) {
         // if there is no bomb yet at this position, add a bomb
         if self.bombs.iter().any(|bomb| bomb.position == position) {
             return; // A bomb already exists at this position, do not add another
@@ -174,7 +186,7 @@ impl Map {
 
     /// Get the next bomb to explode from the list, if any. Use this method because processing the
     /// bombs could change the list of bombs.
-    pub fn get_next_exploding_bomb_location(&self) -> Option<(usize, usize)> {
+    pub fn get_next_exploding_bomb_location(&self) -> Option<Coord> {
         // Get the next bomb that is about to explode, if any
         for bomb in &self.bombs {
             if bomb.timer == 1 {
@@ -185,7 +197,7 @@ impl Map {
     }
 
     /// remove a bomb from a certain location.
-    pub fn remove_bomb(&mut self, position: (usize, usize)) {
+    pub fn remove_bomb(&mut self, position: Coord) {
         // Remove a bomb at the given position
         self.bombs.retain(|bomb| bomb.position != position);
     }
@@ -210,7 +222,7 @@ impl Map {
         let new_position = new_position(player_position, &command);
 
         // Ensure the new position is within the bounds of the map
-        if new_position.0 >= map.height() || new_position.1 >= map.width() {
+        if !new_position.is_valid(map.width(), map.height()) {
             return false; // Out of bounds
         }
 
@@ -256,10 +268,19 @@ impl Map {
         return true;
     }
 
-    pub fn set_wall(&mut self, position: (usize, usize)) {
+    pub fn set_wall(&mut self, position: Coord) {
         // Set a wall at the given position
-        if position.0 < self.height() && position.1 < self.width() {
+        if position.is_valid(self.width().clone(), self.height().clone()) {
             self.set_cell(position, CellType::Wall);
+        }
+    }
+
+    fn remove_destructables_around_users(&mut self, player_positions: Vec<Coord>) {
+        for coord in player_positions {
+            coord
+                .square_3x3()
+                .iter()
+                .for_each(|c| self.set_cell(c.clone(), CellType::Empty))
         }
     }
 }
@@ -289,19 +310,6 @@ pub fn prepare_grid(width: usize, height: usize) -> Vec<Vec<char>> {
             }
         }
     }
-    grid
-}
-
-pub fn remove_destructables_around_users(
-    map: Map,
-    positions: Vec<(usize, usize)>,
-) -> Map {
-    let mut grid = grid;
-
-    for (row, col) in positions {
-        grid.
-    }
-
     grid
 }
 
@@ -348,25 +356,25 @@ fn can_move_to(cell: CellType) -> bool {
 }
 
 // calculate the new position based on the command, just the location, not if it is valid or not.
-fn new_position(current_position: (usize, usize), command: &Command) -> (usize, usize) {
-    let mut new_position = current_position;
+fn new_position(current_position: Coord, command: &Command) -> Coord {
     match command {
         Command::Up => {
-            new_position.0 = new_position.0.saturating_sub(1); // Move up
+            return current_position.move_up(); // Move up
         }
         Command::Down => {
-            new_position.0 = (new_position.0 + 1).min(usize::MAX); // Move down, ensuring it doesn't go out of bounds
+            return current_position.move_down(); // Move down, ensuring it doesn't go out of bounds
         }
         Command::Left => {
-            new_position.1 = new_position.1.saturating_sub(1); // Move left
+            return current_position.move_left(); // Move left
         }
         Command::Right => {
-            new_position.1 = (new_position.1 + 1).min(usize::MAX); // Move right, ensuring it doesn't go out of bounds
+            return current_position.move_right(); // Move right, ensuring it doesn't go out of bounds
         }
         // wait or bomb is no-move
-        Command::Wait | Command::PlaceBomb => {}
+        Command::Wait | Command::PlaceBomb => {
+            return current_position;
+        }
     }
-    new_position
 }
 
 #[cfg(test)]
