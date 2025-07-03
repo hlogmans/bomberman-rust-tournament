@@ -1,0 +1,346 @@
+// in this file, we define the game struct and its methods.
+
+// a game consists the process of playing a game and determining the winner.
+// a game performs initializaation of a map with players,
+// then it runs rounds of turns until a player wins or all players are eliminated.
+
+use crate::{
+    bot::Bot,
+    map::{Command, Map},
+    shrink::calculate_shrink_location,
+};
+use rand::seq::SliceRandom;
+
+pub struct Game {
+    map: Map,
+
+    bots: Vec<Box<dyn Bot>>,
+
+    #[allow(dead_code)]
+    player_count: usize,
+    // map turn. Every player sets a cmmmand for the current turn.
+    turn: usize,
+
+    // at which turn
+    shrink_at_turn: usize,
+
+    // history of handles player actions, it is deterministic, so it can be replayed.
+    player_actions: Vec<(usize, Command)>,
+
+    // if the winner is determined, it will be set to Some(index of the winner)
+    pub winner: Option<usize>,
+
+    // this is the list of active players that can do a move. The game is won if only one is alive.
+    // at start the list is randomized.
+    alive_players: Vec<usize>,
+
+    bomb_range: usize,
+
+    width: usize,
+    height: usize,
+}
+
+impl Game {
+    pub fn build(width: usize, height: usize, players: Vec<Box<dyn Bot>>) -> Game {
+        // Create a new game instance with the given width, height, and players.
+        let mut game = Game::new(width, height, players);
+        game.init();
+        game
+    }
+
+    fn new(width: usize, height: usize, players: Vec<Box<dyn Bot>>) -> Self {
+        let player_count = players.len();
+        let map = Map::create(
+            width,
+            height,
+            players.iter().map(|bot| bot.name().to_string()).collect(),
+        );
+        Game {
+            map,
+            bots: players,
+            player_count: player_count,
+            turn: 0,
+            shrink_at_turn: 500,
+            player_actions: Vec::new(),
+            winner: None,
+            // initialize alive player and shuffle them
+            alive_players: Vec::new(),
+            bomb_range: 3, // Default bomb range, can be adjusted as needed
+            width: width,
+            height: height,
+        }
+    }
+
+    fn init(&mut self) {
+        let mut rng = rand::rng();
+        self.alive_players = (0..self.bots.len()).collect();
+        self.alive_players.shuffle(&mut rng);
+
+        // output the player order for this game
+        let player_names_list: Vec<_> = self
+            .alive_players
+            .iter()
+            .map(|&i| self.bots[i].name())
+            .collect();
+        let pnl = player_names_list.join(", ");
+        println!("{}", pnl);
+    }
+
+    pub fn winner_name(self) -> Option<String> {
+        match self.winner {
+            None => None,
+            Some(x) => self.map.get_player_name(x),
+        }
+    }
+
+    /// run a single turn for the game. Has a callback for player actions.
+    /// returns true if the game has a winner, false otherwise.
+    pub fn run_round(&mut self) -> bool {
+        // This method will run a round of the game.
+        // It will handle player actions, update the map, and check for a winner.
+        if self.check_winner() {
+            return true;
+        }
+
+        // Process player actions for the current turn
+        for player_index in 0..self.alive_players.len() - 1 {
+            let bot = self
+                .bots
+                .get_mut(player_index)
+                .expect("Bot not found for player index");
+            let bot_move = bot.get_move(&self.map, player_index); // Call the provided callback to get the player's command
+            print!("Player {}: {:?} ", player_index, bot_move);
+            // Store the action for this player
+            self.player_actions.push((player_index, bot_move.clone()));
+
+            // handle the command
+            self.map.perform_move(player_index, bot_move.clone());
+
+            // Check for winner after processing all actions
+            if self.check_winner() {
+                return true;
+            }
+        }
+
+        // process bombs and update the map
+        if self.process_bombs() {
+            return true;
+        }
+
+        // reduce map size if needed
+        if self.shrink_at_turn < self.turn {
+            if let Some(shrink_location) =
+                calculate_shrink_location(self.turn - self.shrink_at_turn, self.width, self.height)
+            {
+                // set map location to wall
+                self.map.set_wall(shrink_location);
+
+                // check if there is a player at the shrink location
+                if let Some(player_index) = self.map.get_player_index_at_location(shrink_location) {
+                    // Remove the player from the game
+                    let playername = self.map.get_player_name(player_index);
+                    if let Some(player_name) = playername {
+                        println!(
+                            "Player {} has been removed from the game due to shrinking at location {:?}",
+                            player_name, shrink_location
+                        );
+                    }
+
+                    self.alive_players.retain(|&x| x != player_index);
+                }
+                if self.check_winner() {
+                    return true;
+                }
+            } else {
+                // If no valid shrink location is found, we can handle it as needed.
+                // For now, we will just log an error or panic.
+                panic!("No valid shrink location found for turn {}", self.turn);
+            }
+
+            // set map location to wall
+        }
+
+        if self.check_winner() {
+            return true;
+        }
+
+        // Increment turn
+        self.turn += 1;
+
+        return false;
+    }
+
+    /// Check if there is a winner after each round
+    /// Returns true if there is a winner, false otherwise.
+    fn check_winner(&mut self) -> bool {
+        // Check if there is only one player left alive
+        let alive_count = self.alive_players.len();
+        if alive_count == 1 {
+            // Set the winner to the index of the last remaining player
+            self.winner = self.alive_players.first().map(|x| x.clone()); // Assuming the first player in alive_players is the winner
+            return true;
+        } else if alive_count == 0 {
+            // If no players are left, set winner to None or handle as needed
+            self.winner = None;
+            return true;
+        }
+        false
+    }
+
+    fn bomb_explosion_locations(&self, location: (usize, usize)) -> Vec<(usize, usize)> {
+        // This function returns the locations that will be affected by a bomb explosion at the given location.
+        // It returns the center and all 4 directions (up, down, left, right) within the bomb range.
+
+        // to make it deterministic, the explosion is done in a specific order. From center to outer, then starting on the
+        // left side and going to the right side clockwise
+
+        // XXX XXX
+        // XXX7XXX
+        // XXX3XXX
+        //  62148
+        // XXX5XXX
+        // XXX9XXX
+        // XXX XXX
+        let mut locations = vec![location];
+        let (x, y) = location;
+
+        for i in 1..=self.bomb_range {
+            if x >= i {
+                locations.push((x - i, y)); // Left
+            }
+            if x + i < self.width {
+                locations.push((x + i, y)); // Right
+            }
+            if y >= i {
+                locations.push((x, y - i)); // Up
+            }
+            if y + i < self.height {
+                locations.push((x, y + i)); // Down
+            }
+        }
+
+        locations
+    }
+
+    /// process the bombs. If there is a winner, return true. Then not all bombs might have been processed.
+    /// It stops immediately if a winner is found.
+    fn process_bombs(&mut self) -> bool {
+        // step one: check for all bombs that have 1 round left, those will explode this turn
+        // changed to a while loop
+
+        // step two: for each bomb that explodes, check the surrounding cells and destroy them if they are destructible
+        // for each bomb that explodes, check for each exploding field if there is a player on it, if so, remove the player from the game
+        // and check if only one player is left, if so, set the winner to that player.
+        // if an exploding field is a bomb, remove it from the map (it won't explode, even if it should explode now).
+
+        // remove 1 from all the bomb timers
+        self.map.bomb_timer_decrease();
+
+        // step 2a: check the bomb location to destroy destructible fields
+        while let Some(bomb) = self.map.get_next_exploding_bomb_location() {
+            self.map.remove_bomb(bomb);
+            let explosion_locations = self.bomb_explosion_locations(bomb);
+            for location in explosion_locations {
+                // Check if the location is destructible
+                // first just remove any destructible field at this location
+                self.map.clear_destructable(location);
+
+                // clear any bomb at this location
+                // if so, it might also need to be removed from the current boms_to_explode list.
+
+                // Check if there is a player at this location, there can only be one
+                if let Some(player_index) = self.map.get_player_index_at_location(location) {
+                    println!(
+                        "Player {} has been hit by a bomb at location {:?}",
+                        player_index, location
+                    );
+                    // Remove the player from the game
+                    self.alive_players.retain(|&x| x != player_index);
+
+                    // Check if there is a winner
+                    if self.check_winner() {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+
+        // step three: decrease the timer of all bombs by 1, and remove those that have a timer of 0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn setup_game(width: usize, height: usize, bomb_range: usize) -> Game {
+        Game {
+            map: Map::create(width, height, vec!["A".to_string(), "B".to_string()]),
+            bots: vec![],
+            player_count: 2,
+            turn: 0,
+            shrink_at_turn: 500,
+            player_actions: vec![],
+            winner: None,
+            alive_players: vec![],
+            bomb_range,
+            width,
+            height,
+        }
+    }
+
+    #[test]
+    fn test_bomb_explosion_center() {
+        let game = setup_game(7, 7, 2);
+        let loc = (3, 3);
+        let mut result = game.bomb_explosion_locations(loc);
+        result.sort();
+        let mut expected = vec![
+            (3, 3), // center
+            (1, 3),
+            (2, 3), // up
+            (5, 3),
+            (4, 3), // down
+            (3, 1),
+            (3, 2), // left
+            (3, 5),
+            (3, 4), // right
+        ];
+        expected.sort();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_bomb_explosion_corner() {
+        let game = setup_game(5, 5, 2);
+        let loc = (0, 0);
+        let mut result = game.bomb_explosion_locations(loc);
+        result.sort();
+        let mut expected = vec![(0, 0), (2, 0), (0, 2), (1, 0), (0, 1)];
+        expected.sort();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_bomb_explosion_edge() {
+        let game = setup_game(5, 5, 1);
+        let loc = (0, 2);
+        let mut result = game.bomb_explosion_locations(loc);
+        result.sort();
+        let mut expected = vec![(0, 2), (1, 2), (0, 1), (0, 3)];
+        expected.sort();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_bomb_explosion_range_1() {
+        let game = setup_game(5, 5, 1);
+        let loc = (2, 2);
+        let mut result = game.bomb_explosion_locations(loc);
+        result.sort();
+        let mut expected = vec![(2, 2), (1, 2), (3, 2), (2, 1), (2, 3)];
+        expected.sort();
+        assert_eq!(result, expected);
+    }
+}
