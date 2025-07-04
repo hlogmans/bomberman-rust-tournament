@@ -1,19 +1,15 @@
+pub mod bomb;
+pub mod cell;
+pub mod player;
+
+pub use bomb::*;
+pub use cell::*;
+pub use player::*;
+
 use crate::coord::Col;
 use crate::coord::Coord;
 use crate::coord::Row;
 use crate::coord::ValidCoord;
-
-// a player has a name, and a position on the map.
-pub struct Player {
-    pub name: String,
-    pub position: Coord, // (row, column)
-}
-
-// a bomb item has a position on the map, and a timer that counts down to explosion.
-pub struct Bomb {
-    pub position: Coord, // (row, column)
-    pub timer: usize,    // counts down to explosion, starts at 3
-}
 
 // a map is a 2D vector of characters. But also contains a list of players and a turn number.
 pub struct Map {
@@ -332,16 +328,6 @@ impl Command {
             Command::Wait | Command::PlaceBomb => false,
         }
     }
-}
-
-// a enumration of possible blocks
-#[derive(Clone, PartialEq)]
-pub enum CellType {
-    Empty,       // ' '
-    Bomb,        // 'B'
-    Wall,        // 'W'
-    Player,      // 'P'
-    Destroyable, // '.'
 }
 
 // determine if you can move to a certain type of cell

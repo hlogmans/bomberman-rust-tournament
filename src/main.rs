@@ -5,8 +5,8 @@ mod map;
 mod shrink;
 
 fn main() {
-    let bot1 = Box::new(bot::RandomBot {});
-    let bot2 = Box::new(bot::RandomBot {});
+    let bot1 = Box::new(bot::random_bot::RandomBot {});
+    let bot2 = Box::new(bot::random_bot::RandomBot {});
 
     let mut game = game::Game::build(11, 11, vec![bot1, bot2]);
 

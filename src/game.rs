@@ -104,7 +104,7 @@ impl Game {
         }
 
         // Process player actions for the current turn
-        for player_index in 0..self.alive_players.len() - 1 {
+        for player_index in 0..self.alive_players.len() {
             let bot = self
                 .bots
                 .get_mut(player_index)
