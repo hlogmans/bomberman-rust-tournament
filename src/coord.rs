@@ -1,5 +1,4 @@
-use std::ops::AddAssign;
-use std::ops::{Add, Sub};
+use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Row(usize);
@@ -24,115 +23,28 @@ impl Col {
     }
 }
 
-impl Add<usize> for Col {
-    type Output = Col;
-    fn add(self, rhs: usize) -> Col {
-        Col(self.0 + rhs)
-    }
-}
-
-impl Sub<usize> for Col {
-    type Output = Col;
-    fn sub(self, rhs: usize) -> Col {
-        Col(self.0 - rhs)
-    }
-}
-
-impl Add<usize> for Row {
-    type Output = Row;
-    fn add(self, rhs: usize) -> Row {
-        Row(self.0 + rhs)
-    }
-}
-
-impl Add<RowRelative> for Row {
-    type Output = Row;
-    fn add(self, other: RowRelative) -> Row {
-        let mut new_val = self.0 as isize + other.0;
-        if new_val < 0 {
-            new_val = 0;
+impl From<(usize, usize)> for Coord {
+    fn from((col, row): (usize, usize)) -> Self {
+        Coord {
+            col: Col(col),
+            row: Row(row),
         }
-
-        Row(new_val as usize)
     }
 }
 
-impl Add<ColRelative> for Col {
-    type Output = Col;
-    fn add(self, other: ColRelative) -> Col {
-        let mut new_val = self.0 as isize + other.0;
-        if new_val < 0 {
-            new_val = 0;
-        }
-        Col(new_val as usize)
+impl fmt::Display for Coord {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({}, {})", self.col.0, self.row.0)
     }
 }
 
-impl Sub<usize> for Row {
-    type Output = Row;
-    fn sub(self, rhs: usize) -> Row {
-        Row(self.0 - rhs)
+impl fmt::Debug for Coord {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({}, {})", self.col.0, self.row.0)
     }
 }
 
-impl Into<usize> for Row {
-    fn into(self) -> usize {
-        self.0
-    }
-}
-
-impl Into<usize> for Col {
-    fn into(self) -> usize {
-        self.0
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-struct RowRelative(isize);
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-struct ColRelative(isize);
-
-impl From<usize> for Row {
-    fn from(value: usize) -> Self {
-        Row(value)
-    }
-}
-
-impl From<usize> for Col {
-    fn from(value: usize) -> Self {
-        Col(value)
-    }
-}
-
-impl AddAssign<ColRelative> for Col {
-    fn add_assign(&mut self, other: ColRelative) {
-        let new_val = self.0 as isize + other.0;
-        assert!(new_val >= 0, "Col cannot be negative");
-        self.0 = new_val as usize;
-    }
-}
-
-impl AddAssign<RowRelative> for Row {
-    fn add_assign(&mut self, other: RowRelative) {
-        let new_val = self.0 as isize + other.0;
-        assert!(new_val >= 0, "Col cannot be negative");
-        self.0 = new_val as usize;
-    }
-}
-
-impl From<isize> for RowRelative {
-    fn from(value: isize) -> Self {
-        RowRelative(value)
-    }
-}
-
-impl From<isize> for ColRelative {
-    fn from(value: isize) -> Self {
-        ColRelative(value)
-    }
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Coord {
     pub col: Col,
     pub row: Row,
@@ -150,57 +62,33 @@ impl Coord {
         }
     }
 
-    pub fn try_move_relative_to(&self, col: ColRelative, row: RowRelative) -> Option<Coord> {
-        let new_col = self.col.add(col);
-        let new_row = self.row.add(row);
-        if new_col != self.col || new_row != self.row {
+    fn get_relative_cell(&self, col_offset: isize, row_offset: isize) -> Option<Coord> {
+        let new_row = self.row.0 as isize + row_offset;
+        let new_col = self.col.0 as isize + col_offset;
+        if new_row >= 0 && new_col >= 0 {
             Some(Coord {
-                col: new_col,
-                row: new_row,
+                row: Row(new_row as usize),
+                col: Col(new_col as usize),
             })
         } else {
             None
         }
     }
 
-    pub fn move_relative_to(&self, col: ColRelative, row: RowRelative) -> Coord {
-        let new_coord = Coord {
-            row: self.row.add(row),
-            col: self.col.add(col),
-        };
-        new_coord
+    pub fn move_up(&self) -> Option<Coord> {
+        self.get_relative_cell(0, -1)
     }
 
-    pub fn move_up(&self) -> Coord {
-        self.move_relative_to(ColRelative(0), RowRelative(-1))
+    pub fn move_down(&self) -> Option<Coord> {
+        self.get_relative_cell(0, 1)
     }
 
-    pub fn try_move_up(&self) -> Option<Coord> {
-        self.try_move_relative_to(ColRelative(0), RowRelative(-1))
+    pub fn move_left(&self) -> Option<Coord> {
+        self.get_relative_cell(-1, 0)
     }
 
-    pub fn move_down(&self) -> Coord {
-        self.move_relative_to(ColRelative(0), RowRelative(1))
-    }
-
-    pub fn try_move_down(&self) -> Option<Coord> {
-        self.try_move_relative_to(ColRelative(0), RowRelative(1))
-    }
-
-    pub fn move_left(&self) -> Coord {
-        self.move_relative_to(ColRelative(-1), RowRelative(0))
-    }
-
-    pub fn try_move_left(&self) -> Option<Coord> {
-        self.try_move_relative_to(ColRelative(-1), RowRelative(0))
-    }
-
-    pub fn move_right(&self) -> Coord {
-        self.move_relative_to(ColRelative(1), RowRelative(0))
-    }
-
-    pub fn try_move_right(&self) -> Option<Coord> {
-        self.try_move_relative_to(ColRelative(1), RowRelative(0))
+    pub fn move_right(&self) -> Option<Coord> {
+        self.get_relative_cell(1, 0)
     }
 
     /// Returns a vector of coordinates representing a 3x3 square centered at the current coordinate.
@@ -209,15 +97,32 @@ impl Coord {
         let mut coords = Vec::new();
         for row_change in -1..=1 {
             for col_change in -1..=1 {
-                let new_coord =
-                    self.move_relative_to(ColRelative(col_change), RowRelative(row_change));
-                coords.push(new_coord);
+                let new_coord = self.get_relative_cell(col_change, row_change);
+                coords.extend(new_coord);
             }
         }
         coords
     }
 
     pub fn is_valid(&self, width: usize, height: usize) -> bool {
-        self.col.0 < width && self.row.0 < height && self.col.0 >= 0 && self.row.0 >= 0
+        self.col.0 < width && self.row.0 < height
+    }
+
+    pub fn valid(&self, width: usize, height: usize) -> Option<Coord> {
+        if self.is_valid(width, height) {
+            Some(*self)
+        } else {
+            None
+        }
+    }
+}
+
+pub trait ValidCoord {
+    fn valid(&self, width: usize, height: usize) -> Option<Coord>;
+}
+
+impl ValidCoord for Option<Coord> {
+    fn valid(&self, width: usize, height: usize) -> Option<Coord> {
+        self.and_then(|c| c.valid(width, height))
     }
 }

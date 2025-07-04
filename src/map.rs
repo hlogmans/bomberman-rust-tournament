@@ -1,6 +1,7 @@
 use crate::coord::Col;
 use crate::coord::Coord;
 use crate::coord::Row;
+use crate::coord::ValidCoord;
 
 // a player has a name, and a position on the map.
 pub struct Player {
@@ -23,13 +24,13 @@ pub struct Map {
 }
 
 impl Map {
-    fn new() -> Self {
-        Self {
-            grid: Vec::new(),
-            players: Vec::new(),
-            bombs: Vec::new(),
-        }
-    }
+    // fn new() -> Self {
+    //     Self {
+    //         grid: Vec::new(),
+    //         players: Vec::new(),
+    //         bombs: Vec::new(),
+    //     }
+    // }
     pub fn create(width: usize, height: usize, playernames: Vec<String>) -> Self {
         // at least 2 players, at most 4 players
         if playernames.len() < 2 || playernames.len() > 4 {
@@ -219,20 +220,18 @@ impl Map {
             Some(p) => p,
             None => return false, // Player does not exist
         };
-        let new_position = new_position(player_position, &command);
+        let new_position = new_position(player_position, &command).valid(map.width(), map.height());
 
         // Ensure the new position is within the bounds of the map
-        if !new_position.is_valid(map.width(), map.height()) {
-            return false; // Out of bounds
+        if let Some(coord) = new_position {
+            // Check if the new position is a wall or occupied by another player
+            let cell = map.cell_type(coord);
+            if command.is_move() && !can_move_to(cell) {
+                return false; // Cannot move to a wall or another player
+            }
+            return true;
         }
-
-        // Check if the new position is a wall or occupied by another player
-        let cell = map.cell_type(new_position);
-        if command.is_move() && !can_move_to(cell) {
-            return false; // Cannot move to a wall or another player
-        }
-
-        true // Valid move
+        false // Valid move
     }
 
     // update the map by performing the move, everything is validated before this is called.
@@ -259,9 +258,10 @@ impl Map {
             _ => {
                 // clear the old position (will be filled again after wrapping up the map)
                 self.set_cell(player_position, CellType::Empty);
-                let new_pos = new_position(player_position, &command);
-                self.set_cell(new_pos, CellType::Player);
-                self.set_player_position(player, new_pos); // Update the player's position
+                new_position(player_position, &command).map(|c| {
+                    self.set_cell(c, CellType::Player);
+                    self.set_player_position(player, c);
+                });
             }
         }
 
@@ -356,7 +356,7 @@ fn can_move_to(cell: CellType) -> bool {
 }
 
 // calculate the new position based on the command, just the location, not if it is valid or not.
-fn new_position(current_position: Coord, command: &Command) -> Coord {
+fn new_position(current_position: Coord, command: &Command) -> Option<Coord> {
     match command {
         Command::Up => {
             return current_position.move_up(); // Move up
@@ -372,7 +372,7 @@ fn new_position(current_position: Coord, command: &Command) -> Coord {
         }
         // wait or bomb is no-move
         Command::Wait | Command::PlaceBomb => {
-            return current_position;
+            return Some(current_position);
         }
     }
 }

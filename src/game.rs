@@ -210,10 +210,10 @@ impl Game {
         let mut down = loc;
 
         for _ in 1..=self.bomb_range {
-            left = left.and_then(|l| l.try_move_left());
-            right = right.and_then(|l| l.try_move_right());
-            up = up.and_then(|l| l.try_move_up());
-            down = down.and_then(|l| l.try_move_down());
+            left = left.and_then(|l| l.move_left());
+            right = right.and_then(|l| l.move_right());
+            up = up.and_then(|l| l.move_up());
+            down = down.and_then(|l| l.move_down());
             locations.extend(left);
             locations.extend(up);
             locations.extend(right);
