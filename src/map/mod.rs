@@ -330,7 +330,7 @@ pub fn prepare_grid(width: usize, height: usize) -> Vec<char> {
 }
 
 // a command is either up, down, left, right, wait or place_bomb.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum Command {
     Up,
     Down,

@@ -142,10 +142,10 @@ impl Game {
             let bot_move = bot.get_move(&self.map, player_index); // Call the provided callback to get the player's command
             //print!("Player {}: {:?} ", player_index, bot_move);
             // Store the action for this player
-            self.player_actions.push((player_index, bot_move.clone()));
+            self.player_actions.push((player_index, bot_move));
 
             // handle the command
-            self.map.perform_move(player_index, bot_move.clone());
+            self.map.perform_move(player_index, bot_move);
 
             // Check for winner after processing all actions
             if self.check_winner() {
