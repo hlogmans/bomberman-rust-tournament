@@ -1,5 +1,7 @@
 use std::fmt;
 
+use crate::map::Command;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Row(usize);
 
@@ -89,6 +91,17 @@ impl Coord {
 
     pub fn move_right(&self) -> Option<Coord> {
         self.get_relative_cell(1, 0)
+    }
+
+    pub fn move_command(&self, command: Command) -> Option<Coord> {
+        match command {
+            Command::Up => self.move_up(),
+            Command::Down => self.move_down(),
+            Command::Left => self.move_left(),
+            Command::Right => self.move_right(),
+            Command::PlaceBomb => Some(self.clone()),
+            Command::Wait => Some(self.clone()),
+        }
     }
 
     /// Returns a vector of coordinates representing a 3x3 square centered at the current coordinate.

@@ -13,37 +13,14 @@ use crate::coord::Coord;
 use crate::coord::Row;
 use crate::coord::ValidCoord;
 
-#[allow(dead_code)]
-pub struct MapSettings {
-    pub width: usize,
-    pub height: usize,
-    pub playernames: Vec<String>,
-    pub bombtimer: usize,
-    pub bombradius: usize,
-    pub endgame: usize,
-}
-
-impl Default for MapSettings {
-    fn default() -> Self {
-        Self {
-            width: 15,
-            height: 15,
-            playernames: vec!["Player 1".to_string(), "Player 2".to_string()],
-            bombtimer: 3,
-            bombradius: 2,
-            endgame: 100,
-        }
-    }
-}
-
 // a map is a 2D vector of characters. But also contains a list of players and a turn number.
 pub struct Map {
-    grid: Vec<char>,
-    height: usize,
-    width: usize,
-    players: Vec<Player>,
+    pub grid: Vec<char>,
+    pub height: usize,
+    pub width: usize,
+    pub players: Vec<Player>,
     // the turn number, starts at 0 and increments every turn. One turn is everybody making a move.
-    bombs: Vec<Bomb>, // List of bombs on the map
+    pub bombs: Vec<Bomb>, // List of bombs on the map
 }
 
 impl Map {
@@ -155,7 +132,7 @@ impl Map {
         position.row.get() * self.width + position.col.get()
     }
 
-    fn get_player(&self, no: usize) -> Option<&Player> {
+    pub fn get_player(&self, no: usize) -> Option<&Player> {
         self.players.get(no)
     }
 

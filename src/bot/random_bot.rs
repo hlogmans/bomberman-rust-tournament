@@ -1,6 +1,8 @@
 use crate::{
     bot::Bot,
-    map::{Command, Map, MapSettings},
+    coord::Coord,
+    game::map_settings::MapSettings,
+    map::{Command, Map},
 };
 
 pub struct RandomBot {
@@ -14,7 +16,7 @@ impl Bot for RandomBot {
         format!("{} ({})", self.name, self.id)
     }
 
-    fn get_move(&mut self, _map: &Map, _player_index: usize) -> Command {
+    fn get_move(&mut self, _map: &Map, _player_location: Coord) -> Command {
         // Randomly choose a command for the bot
         use rand::Rng;
         let mut rng = rand::rng();
@@ -24,7 +26,7 @@ impl Bot for RandomBot {
             Command::Left,
             Command::Right,
             Command::Wait,
-            Command::PlaceBomb,
+            // Command::PlaceBomb,
         ];
         commands[rng.random_range(0..commands.len())].clone()
     }

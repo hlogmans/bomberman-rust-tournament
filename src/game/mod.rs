@@ -1,23 +1,16 @@
-// in this file, we define the game struct and its methods.
+pub mod game_progress;
+pub mod gameresult;
+pub mod map_settings;
 
-// a game consists the process of playing a game and determining the winner.
-// a game performs initializaation of a map with players,
-// then it runs rounds of turns until a player wins or all players are eliminated.
+use rand::seq::SliceRandom;
 
 use crate::{
     bot::Bot,
     coord::Coord,
-    map::{Command, ConsoleDisplay, Map, MapSettings, display::MapDisplay},
+    game::{game_progress::GameProgress, gameresult::GameResult, map_settings::MapSettings},
+    map::{Command, ConsoleDisplay, Map, MapDisplay},
     shrink::calculate_shrink_location,
 };
-
-use rand::seq::SliceRandom;
-
-#[allow(dead_code)]
-pub struct GameProgress {
-    pub turn: usize,
-    pub endgame_started: bool,
-}
 
 pub struct Game {
     map_settings: MapSettings,
@@ -116,7 +109,14 @@ impl Game {
         }
     }
 
-    pub fn winner_name(self) -> Option<String> {
+    pub fn run(&mut self) -> GameResult {
+        while self.winner.is_none() {
+            self.run_round(None);
+        }
+        GameResult::build(self)
+    } // loop until a winner is set
+
+    pub fn winner_name(&self) -> Option<String> {
         match self.winner {
             None => None,
             Some(x) => self.map.get_player_name(x),
@@ -139,7 +139,8 @@ impl Game {
                 .bots
                 .get_mut(player_index)
                 .expect("Bot not found for player index");
-            let bot_move = bot.get_move(&self.map, player_index); // Call the provided callback to get the player's command
+            let loc = self.map.get_player(player_index).unwrap().position.clone();
+            let bot_move = bot.get_move(&self.map, loc); // Call the provided callback to get the player's command
             //print!("Player {}: {:?} ", player_index, bot_move);
             // Store the action for this player
             self.player_actions.push((player_index, bot_move));

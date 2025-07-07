@@ -10,14 +10,16 @@
 pub mod easy_bot;
 pub mod random_bot;
 
-use crate::map::{Command, Map, MapSettings};
+use crate::coord::Coord;
+use crate::game::map_settings::MapSettings;
+use crate::map::{Command, Map};
 
 pub trait Bot {
     fn name(&self) -> String;
 
     fn start_game(&mut self, map_settings: &MapSettings, bot_id: usize) -> bool;
 
-    fn get_move(&mut self, map: &Map, player_index: usize) -> Command;
+    fn get_move(&mut self, map: &Map, player_location: Coord) -> Command;
 }
 
 pub type BotConstructor = fn(&str) -> Box<dyn Bot>;
