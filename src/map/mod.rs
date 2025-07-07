@@ -13,6 +13,7 @@ use crate::coord::Coord;
 use crate::coord::Row;
 use crate::coord::ValidCoord;
 
+#[allow(dead_code)]
 pub struct MapSettings {
     pub width: usize,
     pub height: usize,
@@ -116,8 +117,6 @@ impl Map {
             self.set_cell(location, CellType::Empty);
         }
     }
-
-    // get the width of the map
 
     // get the BlockType at a given position
     fn cell_type(&self, position: Coord) -> CellType {
