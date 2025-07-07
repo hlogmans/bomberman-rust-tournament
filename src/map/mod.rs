@@ -1,9 +1,11 @@
 pub mod bomb;
 pub mod cell;
+pub mod display;
 pub mod player;
 
 pub use bomb::*;
 pub use cell::*;
+pub use display::*;
 pub use player::*;
 
 use crate::coord::Col;
@@ -11,9 +13,33 @@ use crate::coord::Coord;
 use crate::coord::Row;
 use crate::coord::ValidCoord;
 
+pub struct MapSettings {
+    pub width: usize,
+    pub height: usize,
+    pub playernames: Vec<String>,
+    pub bombtimer: usize,
+    pub bombradius: usize,
+    pub endgame: usize,
+}
+
+impl Default for MapSettings {
+    fn default() -> Self {
+        Self {
+            width: 15,
+            height: 15,
+            playernames: vec!["Player 1".to_string(), "Player 2".to_string()],
+            bombtimer: 3,
+            bombradius: 2,
+            endgame: 100,
+        }
+    }
+}
+
 // a map is a 2D vector of characters. But also contains a list of players and a turn number.
 pub struct Map {
-    grid: Vec<Vec<char>>,
+    grid: Vec<char>,
+    height: usize,
+    width: usize,
     players: Vec<Player>,
     // the turn number, starts at 0 and increments every turn. One turn is everybody making a move.
     bombs: Vec<Bomb>, // List of bombs on the map
@@ -61,6 +87,8 @@ impl Map {
 
         let mut map = Map {
             grid,
+            width,
+            height,
             players: playernames
                 .iter()
                 .cloned()
@@ -89,28 +117,16 @@ impl Map {
         }
     }
 
-    // get the height of the map
-    fn height(&self) -> usize {
-        self.grid.len()
-    }
-
     // get the width of the map
-    fn width(&self) -> usize {
-        if self.grid.is_empty() {
-            0
-        } else {
-            self.grid[0].len()
-        }
-    }
 
     // get the BlockType at a given position
     fn cell_type(&self, position: Coord) -> CellType {
-        let row = position.row.get();
-        let col = position.col.get();
-        if row >= self.height() || col >= self.width() {
+        if !position.is_valid(self.width, self.height) {
             return CellType::Wall; // Out of bounds is treated as a wall
         }
-        match self.grid[position.row.get()][position.col.get()] {
+
+        let idx = self.cell_index(&position);
+        match self.grid[idx] {
             ' ' => CellType::Empty,
             'B' => CellType::Bomb,
             'W' => CellType::Wall,
@@ -121,7 +137,7 @@ impl Map {
     }
 
     fn set_cell(&mut self, position: Coord, cell_type: CellType) {
-        if position.is_valid(self.width(), self.height()) {
+        if position.is_valid(self.width, self.height) {
             let char = match cell_type {
                 CellType::Empty => ' ',
                 CellType::Bomb => 'B',
@@ -131,8 +147,13 @@ impl Map {
                     "Cannot set this cell type directly, use appropriate methods for walls or destroyable cells"
                 ),
             };
-            self.grid[position.row.get()][position.col.get()] = char;
+            let idx = self.cell_index(&position);
+            self.grid[idx] = char;
         }
+    }
+
+    fn cell_index(&self, position: &Coord) -> usize {
+        position.row.get() * self.width + position.col.get()
     }
 
     fn get_player(&self, no: usize) -> Option<&Player> {
@@ -216,7 +237,7 @@ impl Map {
             Some(p) => p,
             None => return false, // Player does not exist
         };
-        let new_position = new_position(player_position, &command).valid(map.width(), map.height());
+        let new_position = new_position(player_position, &command).valid(map.width, map.height);
 
         // Ensure the new position is within the bounds of the map
         if let Some(coord) = new_position {
@@ -266,7 +287,7 @@ impl Map {
 
     pub fn set_wall(&mut self, position: Coord) {
         // Set a wall at the given position
-        if position.is_valid(self.width().clone(), self.height().clone()) {
+        if position.is_valid(self.width.clone(), self.height.clone()) {
             self.set_cell(position, CellType::Wall);
         }
     }
@@ -276,7 +297,7 @@ impl Map {
             coord
                 .square_3x3()
                 .iter()
-                .for_each(|c| self.set_cell(c.clone(), CellType::Empty))
+                .for_each(|c| self.clear_destructable(c.clone()))
         }
     }
 }
@@ -292,17 +313,17 @@ impl Map {
 /// W.W.W.W
 /// W.....W
 /// WWWWWWW line 6
-pub fn prepare_grid(width: usize, height: usize) -> Vec<Vec<char>> {
+pub fn prepare_grid(width: usize, height: usize) -> Vec<char> {
     // the grid is now filled with dots (destructable). I need to add walls.
     // first wall the top layer
-    let mut grid = vec![vec!['.'; width]; height];
+    let mut grid = vec!['.'; width * height];
 
     for row in 0..height {
         for column in 0..width {
             let walled = (row == 0 || row == height - 1 || column == 0 || column == width - 1)
                 || (column % 2 == 0 && row % 2 == 0);
             if walled {
-                grid[row][column] = 'W';
+                grid[row * width + column] = 'W';
             }
         }
     }
@@ -330,15 +351,10 @@ impl Command {
     }
 }
 
-// determine if you can move to a certain type of cell
+/// determine if you can move to a certain type of cell
+/// At the moment, only empty cells are considered movable.
 fn can_move_to(cell: CellType) -> bool {
-    match cell {
-        CellType::Empty => true,
-        CellType::Bomb => false,       // Cannot move to a bomb
-        CellType::Wall => false,       // Cannot move to a wall
-        CellType::Player => false,     // Cannot move to another player
-        CellType::Destroyable => true, // Can move to a destroyable cell
-    }
+    return cell == CellType::Empty;
 }
 
 // calculate the new position based on the command, just the location, not if it is valid or not.
@@ -382,13 +398,9 @@ mod tests {
         let grid = super::prepare_grid(width, height);
 
         let expected = vec![
-            vec!['W', 'W', 'W', 'W', 'W', 'W', 'W'],
-            vec!['W', '.', '.', '.', '.', '.', 'W'],
-            vec!['W', '.', 'W', '.', 'W', '.', 'W'],
-            vec!['W', '.', '.', '.', '.', '.', 'W'],
-            vec!['W', '.', 'W', '.', 'W', '.', 'W'],
-            vec!['W', '.', '.', '.', '.', '.', 'W'],
-            vec!['W', 'W', 'W', 'W', 'W', 'W', 'W'],
+            'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', '.', '.', '.', '.', '.', 'W', 'W', '.', 'W',
+            '.', 'W', '.', 'W', 'W', '.', '.', '.', '.', '.', 'W', 'W', '.', 'W', '.', 'W', '.',
+            'W', 'W', '.', '.', '.', '.', '.', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W',
         ];
 
         assert_eq!(grid, expected);

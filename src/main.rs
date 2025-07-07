@@ -1,3 +1,7 @@
+use std::time::Instant;
+
+use crate::bot::available_bots;
+
 mod bot;
 mod coord;
 mod game;
@@ -5,24 +9,29 @@ mod map;
 mod shrink;
 
 fn main() {
-    let bot1 = Box::new(bot::random_bot::RandomBot {});
-    let bot2 = Box::new(bot::random_bot::RandomBot {});
+    let bot_constructors = available_bots();
+
+    let bot1 = bot_constructors.get(0).unwrap()("Bot1");
+    let bot2 = bot_constructors.get(1).unwrap()("Bot2");
+
+    // determine how long the game will last in milliseconds
+    //
+    // Start timer
+    let start_time = Instant::now();
 
     let mut game = game::Game::build(11, 11, vec![bot1, bot2]);
 
-    let mut turn = 0;
+    game.display();
 
     // loop until a winner is set
     while game.winner.is_none() {
-        turn += 1;
-        // Run a round of the game, where each bot gets to make a move
-
-        game.run_round();
-        // now we could render the game state, but showing just the turn number for simplicity
-        println!("Turn: {}", turn);
+        game.run_round(None);
     }
+    game.display();
+    print!("Game Over! Winner: {:?}", game.winner_name().unwrap());
 
-    print!("Game Over! Winner: {:?}", game.winner_name());
+    let duration = start_time.elapsed();
+    println!("\nGame duration: {:.2?}", duration);
 }
 
 // I want to create a bomberman server in Rust.

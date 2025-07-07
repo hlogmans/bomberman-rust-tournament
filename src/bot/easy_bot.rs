@@ -3,12 +3,12 @@ use crate::{
     map::{Command, Map, MapSettings},
 };
 
-pub struct RandomBot {
+pub struct EasyBot {
     pub name: String,
     pub id: usize,
 }
 
-impl Bot for RandomBot {
+impl Bot for EasyBot {
     fn name(&self) -> String {
         // return the name plus the ID
         format!("{} ({})", self.name, self.id)
@@ -24,18 +24,17 @@ impl Bot for RandomBot {
             Command::Left,
             Command::Right,
             Command::Wait,
-            Command::PlaceBomb,
         ];
         commands[rng.random_range(0..commands.len())].clone()
     }
-    fn start_game(&mut self, _: &MapSettings, bot_id: usize) -> bool {
+    fn start_game(&mut self, _map_settings: &MapSettings, bot_id: usize) -> bool {
         self.id = bot_id;
         true
     }
 }
 
-impl RandomBot {
+impl EasyBot {
     pub fn new(name: String) -> Self {
-        RandomBot { name, id: 0 }
+        EasyBot { name, id: 0 }
     }
 }

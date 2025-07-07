@@ -7,15 +7,25 @@
 use crate::{
     bot::Bot,
     coord::Coord,
-    map::{Command, Map},
+    map::{Command, ConsoleDisplay, Map, MapSettings, display::MapDisplay},
     shrink::calculate_shrink_location,
 };
+
 use rand::seq::SliceRandom;
 
+pub struct GameProgress {
+    pub turn: usize,
+    pub endgame_started: bool,
+}
+
 pub struct Game {
+    map_settings: MapSettings,
+
     map: Map,
 
     bots: Vec<Box<dyn Bot>>,
+
+    display: Box<dyn MapDisplay>,
 
     #[allow(dead_code)]
     player_count: usize,
@@ -56,12 +66,24 @@ impl Game {
             height,
             players.iter().map(|bot| bot.name().to_string()).collect(),
         );
+        let map_settings = MapSettings {
+            bombtimer: 100,
+            bombradius: 3,
+            endgame: 500,
+            width,
+            height,
+            playernames: Vec::new(),
+        };
+
+        let endgame = map_settings.endgame.clone();
+
         Game {
+            map_settings,
             map,
             bots: players,
             player_count: player_count,
             turn: 0,
-            shrink_at_turn: 500,
+            shrink_at_turn: endgame,
             player_actions: Vec::new(),
             winner: None,
             // initialize alive player and shuffle them
@@ -69,6 +91,7 @@ impl Game {
             bomb_range: 3, // Default bomb range, can be adjusted as needed
             width: width,
             height: height,
+            display: Box::new(ConsoleDisplay),
         }
     }
 
@@ -85,6 +108,11 @@ impl Game {
             .collect();
         let pnl = player_names_list.join(", ");
         println!("{}", pnl);
+
+        // call start_game for each bot
+        for (i, bot) in self.bots.iter_mut().enumerate() {
+            bot.start_game(&self.map_settings, i);
+        }
     }
 
     pub fn winner_name(self) -> Option<String> {
@@ -96,7 +124,8 @@ impl Game {
 
     /// run a single turn for the game. Has a callback for player actions.
     /// returns true if the game has a winner, false otherwise.
-    pub fn run_round(&mut self) -> bool {
+    /// There is a callback to check game status like turn number.
+    pub fn run_round(&mut self, progress_callback: Option<&mut dyn FnMut(&GameProgress)>) -> bool {
         // This method will run a round of the game.
         // It will handle player actions, update the map, and check for a winner.
         if self.check_winner() {
@@ -110,7 +139,7 @@ impl Game {
                 .get_mut(player_index)
                 .expect("Bot not found for player index");
             let bot_move = bot.get_move(&self.map, player_index); // Call the provided callback to get the player's command
-            print!("Player {}: {:?} ", player_index, bot_move);
+            //print!("Player {}: {:?} ", player_index, bot_move);
             // Store the action for this player
             self.player_actions.push((player_index, bot_move.clone()));
 
@@ -167,6 +196,14 @@ impl Game {
 
         // Increment turn
         self.turn += 1;
+
+        if let Some(callback) = progress_callback {
+            let progress = GameProgress {
+                turn: self.turn,
+                endgame_started: self.turn >= self.shrink_at_turn,
+            };
+            callback(&progress);
+        }
 
         return false;
     }
@@ -269,6 +306,10 @@ impl Game {
 
         // step three: decrease the timer of all bombs by 1, and remove those that have a timer of 0
     }
+
+    pub fn display(&self) {
+        self.display.display(&self.map);
+    }
 }
 
 #[cfg(test)]
@@ -277,6 +318,7 @@ mod tests {
 
     fn setup_game(width: usize, height: usize, bomb_range: usize) -> Game {
         Game {
+            map_settings: MapSettings::default(),
             map: Map::create(width, height, vec!["A".to_string(), "B".to_string()]),
             bots: vec![],
             player_count: 2,
@@ -288,6 +330,7 @@ mod tests {
             bomb_range,
             width,
             height,
+            display: Box::new(ConsoleDisplay),
         }
     }
 
