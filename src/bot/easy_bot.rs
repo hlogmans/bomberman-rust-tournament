@@ -10,6 +10,7 @@ pub struct EasyBot {
     pub id: usize,
 
     nextmoves: Vec<Command>,
+    map_settings: MapSettings,
 }
 
 impl Bot for EasyBot {
@@ -24,10 +25,11 @@ impl Bot for EasyBot {
             return self.nextmoves.pop().unwrap();
         }
 
-        // // do I need to run away?
-        // if let Some(runaway) = self.danger_location(map, player_location) {
-        //     return runaway;
-        // }
+        // do I need to run away?
+        if let Some(runaway) = self.danger_location(map, player_location) {
+            return runaway;
+        }
+
         // is this location safe to put a bomb?
         if let Some(moves) = self.safe_to_bomb(map, player_location) {
             self.nextmoves = moves;
@@ -47,9 +49,33 @@ impl Bot for EasyBot {
         commands[rng.random_range(0..commands.len())].clone()
     }
 
-    fn start_game(&mut self, _map_settings: &MapSettings, bot_id: usize) -> bool {
+    fn start_game(&mut self, map_settings: &MapSettings, bot_id: usize) -> bool {
         self.id = bot_id;
+        self.map_settings = map_settings.clone();
         true
+    }
+}
+
+impl Coord {
+    fn in_bomb_range(&self, bomb: &Coord, radius: u32) -> bool {
+        if let Some(distance) = self.distance(&bomb) {
+            distance <= radius
+        } else {
+            false
+        }
+    }
+
+    fn distance(&self, other: &Coord) -> Option<u32> {
+        if self.col.get() == other.col.get() && self.row.get() == other.row.get() {
+            return Some(0);
+        }
+        if self.col.get() != other.col.get() && self.row.get() != other.row.get() {
+            return None;
+        }
+        Some(
+            ((self.col.get() as i32 - other.col.get() as i32).abs()
+                + (self.row.get() as i32 - other.row.get() as i32).abs()) as u32,
+        )
     }
 }
 
@@ -59,6 +85,7 @@ impl EasyBot {
             name,
             id: 0,
             nextmoves: Vec::new(),
+            map_settings: MapSettings::default(),
         }
     }
 
@@ -93,6 +120,12 @@ impl EasyBot {
 
     /// Check if the current location is dangerous because of bombs
     fn danger_location(&self, map: &Map, player_location: Coord) -> Option<Command> {
+        // is there a bomb that will hit the current location?
+        for bomb in map.bombs.iter().map(|bomb| &bomb.position) {
+            if player_location.in_bomb_range(bomb, self.map_settings.bombradius as u32) {
+                return Some(Command::Left); // <-- this is plain stupid of course, but alas no problem for v1
+            }
+        }
         None
     }
 
