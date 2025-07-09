@@ -6,6 +6,7 @@ pub struct GameResult {
     pub winner: String,
     pub replay_data: Vec<Command>,
     pub game_settings: MapSettings,
+    pub rounds: usize,
 }
 
 impl GameResult {
@@ -21,6 +22,7 @@ impl GameResult {
                 .map(|command| command.1.clone())
                 .collect(),
             game_settings,
+            rounds: game.turn,
         }
     }
 }

@@ -21,7 +21,24 @@ fn main() {
 
     let gameresult = game::Game::build(11, 11, vec![bot1, bot2]).run();
 
-    print!("Game Over! Winner: {:?}", gameresult.winner);
+    print!(
+        "Game Over! Winner: {:?} in {:?} rounds",
+        gameresult.winner, gameresult.rounds
+    );
+
+    let duration = start_time.elapsed();
+    println!("\nGame duration: {:.2?}", duration);
+
+    // Replay the game
+    let rbot1 = bot_constructors.get(1).unwrap()("Bot1");
+    let rbot2 = bot_constructors.get(1).unwrap()("Bot2");
+    let commands = gameresult.replay_data;
+    let replay_result = game::Game::build(11, 11, vec![rbot1, rbot2]).replay(&commands);
+
+    print!(
+        "Replay Over! Winner: {:?} in {:?} rounds",
+        replay_result.winner, replay_result.rounds
+    );
 
     let duration = start_time.elapsed();
     println!("\nGame duration: {:.2?}", duration);

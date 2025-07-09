@@ -111,10 +111,17 @@ impl Game {
 
     pub fn run(&mut self) -> GameResult {
         while self.winner.is_none() {
-            self.run_round(None);
+            self.run_round(None, None);
         }
         GameResult::build(self)
     } // loop until a winner is set
+
+    pub fn replay(&mut self, commands: &Vec<Command>) -> GameResult {
+        while self.winner.is_none() {
+            self.run_round(None, Some(commands));
+        }
+        GameResult::build(self)
+    }
 
     pub fn winner_name(&self) -> Option<String> {
         match self.winner {
@@ -126,7 +133,11 @@ impl Game {
     /// run a single turn for the game. Has a callback for player actions.
     /// returns true if the game has a winner, false otherwise.
     /// There is a callback to check game status like turn number.
-    pub fn run_round(&mut self, progress_callback: Option<&mut dyn FnMut(&GameProgress)>) -> bool {
+    pub fn run_round(
+        &mut self,
+        progress_callback: Option<&mut dyn FnMut(&GameProgress)>,
+        replay_commands: Option<&Vec<Command>>,
+    ) -> bool {
         // This method will run a round of the game.
         // It will handle player actions, update the map, and check for a winner.
         if self.check_winner() {
@@ -140,9 +151,15 @@ impl Game {
                 .get_mut(player_index)
                 .expect("Bot not found for player index");
             let loc = self.map.get_player(player_index).unwrap().position.clone();
-            let bot_move = bot.get_move(&self.map, loc); // Call the provided callback to get the player's command
-            //print!("Player {}: {:?} ", player_index, bot_move);
-            // Store the action for this player
+
+            // if the game is a replay, take the move from the Vec
+            let bot_move;
+            if let Some(replay_commands) = replay_commands {
+                bot_move = replay_commands[player_index];
+            } else {
+                bot_move = bot.get_move(&self.map, loc); // Call the provided callback to get the player's command
+            }
+
             self.player_actions.push((player_index, bot_move));
 
             // handle the command

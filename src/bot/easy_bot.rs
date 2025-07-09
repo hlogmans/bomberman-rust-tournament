@@ -110,7 +110,13 @@ impl EasyBot {
                 if let Some(loc2) = loc1.move_command(m2) {
                     // if both locations are empty, then we can bomb there
                     if self.get_cell(map, loc1) == ' ' && self.get_cell(map, loc2) == ' ' {
-                        return Some(vec![m2, m1, Command::PlaceBomb]);
+                        return Some(vec![
+                            Command::Wait,
+                            Command::Wait,
+                            m2,
+                            m1,
+                            Command::PlaceBomb,
+                        ]);
                     }
                 }
             }
