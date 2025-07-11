@@ -46,6 +46,17 @@ pub struct Game {
 }
 
 impl Game {
+    /// Constructs a new game instance with the given width, height, and players.
+    ///
+    /// # Arguments
+    ///
+    /// * `width` - The width of the game map.
+    /// * `height` - The height of the game map.
+    /// * `players` - The list of players participating in the game.
+    ///
+    /// # Returns
+    ///
+    /// A game result object that contains the winner and the history of player actions.
     pub fn build(width: usize, height: usize, players: Vec<Box<dyn Bot>>) -> Game {
         // Create a new game instance with the given width, height, and players.
         let mut game = Game::new(width, height, players);
@@ -100,8 +111,8 @@ impl Game {
             .iter()
             .map(|&i| self.bots[i].name())
             .collect();
-        let pnl = player_names_list.join(", ");
-        println!("{}", pnl);
+        // let pnl = player_names_list.join(", ");
+        // println!("{}", pnl);
 
         // call start_game for each bot
         for (i, bot) in self.bots.iter_mut().enumerate() {
@@ -111,14 +122,14 @@ impl Game {
 
     pub fn run(&mut self) -> GameResult {
         while self.winner.is_none() {
-            self.run_round(None, None);
+            self.run_round(None, None, None);
         }
         GameResult::build(self)
     } // loop until a winner is set
 
     pub fn replay(&mut self, commands: &Vec<Command>) -> GameResult {
         while self.winner.is_none() {
-            self.run_round(None, Some(commands));
+            self.run_round(None, Some(commands), None);
         }
         GameResult::build(self)
     }
@@ -137,6 +148,7 @@ impl Game {
         &mut self,
         progress_callback: Option<&mut dyn FnMut(&GameProgress)>,
         replay_commands: Option<&Vec<Command>>,
+        logging_callback: Option<&mut dyn FnMut(String)>,
     ) -> bool {
         // This method will run a round of the game.
         // It will handle player actions, update the map, and check for a winner.
@@ -172,7 +184,7 @@ impl Game {
         }
 
         // process bombs and update the map
-        if self.process_bombs() {
+        if self.process_bombs(&logging_callback) {
             return true;
         }
 
@@ -188,11 +200,13 @@ impl Game {
                 if let Some(player_index) = self.map.get_player_index_at_location(shrink_location) {
                     // Remove the player from the game
                     let playername = self.map.get_player_name(player_index);
-                    if let Some(player_name) = playername {
-                        println!(
+                    if let Some(player_name) = playername
+                        && let Some(cb) = logging_callback
+                    {
+                        cb(format!(
                             "Player {} has been removed from the game due to shrinking at location {:?}",
                             player_name, shrink_location
-                        );
+                        ));
                     }
 
                     self.alive_players.retain(|&x| x != player_index);
@@ -281,7 +295,7 @@ impl Game {
 
     /// process the bombs. If there is a winner, return true. Then not all bombs might have been processed.
     /// It stops immediately if a winner is found.
-    fn process_bombs(&mut self) -> bool {
+    fn process_bombs(&mut self, logging_callback: &Option<&mut dyn FnMut(String)>) -> bool {
         // step one: check for all bombs that have 1 round left, those will explode this turn
         // changed to a while loop
 
@@ -307,10 +321,13 @@ impl Game {
 
                 // Check if there is a player at this location, there can only be one
                 if let Some(player_index) = self.map.get_player_index_at_location(location) {
-                    println!(
-                        "Player {} has been hit by a bomb at location {:?}",
-                        player_index, location
-                    );
+                    // if let Some(cb) = logging_callback {
+                    //     cb(format!(
+                    //         "Player {} has been hit by a bomb at location {:?}",
+                    //         player_index, location
+                    //     ));
+                    // }
+
                     // Remove the player from the game
                     self.alive_players.retain(|&x| x != player_index);
 

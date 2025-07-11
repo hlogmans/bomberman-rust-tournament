@@ -5,6 +5,7 @@ use crate::{
     map::{Command, Map},
 };
 
+#[derive(Clone)]
 pub struct EasyBot {
     pub name: String,
     pub id: usize,
@@ -53,6 +54,10 @@ impl Bot for EasyBot {
         self.id = bot_id;
         self.map_settings = map_settings.clone();
         true
+    }
+
+    fn clone_bot(&self) -> Box<dyn Bot> {
+        Box::new(self.clone())
     }
 }
 

@@ -5,9 +5,16 @@ use crate::{
     map::{Command, Map},
 };
 
+#[derive(Clone)]
 pub struct RandomBot {
     pub name: String,
     pub id: usize,
+}
+
+impl RandomBot {
+    pub fn new(name: String) -> Self {
+        RandomBot { name, id: 0 }
+    }
 }
 
 impl Bot for RandomBot {
@@ -30,14 +37,13 @@ impl Bot for RandomBot {
         ];
         commands[rng.random_range(0..commands.len())].clone()
     }
+
     fn start_game(&mut self, _: &MapSettings, bot_id: usize) -> bool {
         self.id = bot_id;
         true
     }
-}
 
-impl RandomBot {
-    pub fn new(name: String) -> Self {
-        RandomBot { name, id: 0 }
+    fn clone_bot(&self) -> Box<dyn Bot> {
+        Box::new(self.clone())
     }
 }

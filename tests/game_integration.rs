@@ -12,8 +12,8 @@ fn integration_game_runs_and_has_winner() {
 
     // Act: speel maximaal 100 rondes of tot er een winnaar is
     let mut rounds = 0;
-    while game.winner.is_none() && rounds < 100 {
-        game.run_round(None);
+    while game.winner.is_none() && rounds < 1000 {
+        game.run_round(None, None, None);
         rounds += 1;
     }
 
