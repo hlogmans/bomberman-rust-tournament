@@ -1,4 +1,7 @@
-use crate::{bot::available_bots, tournament::run_tournament};
+use crate::{
+    bot::available_bots,
+    tournament::{BotScores, run_tournament},
+};
 
 mod bot;
 mod coord;
@@ -18,15 +21,25 @@ fn main() {
 
     // Start 4 threads, elke thread maakt zijn eigen bots aan
     let mut handles = Vec::new();
+
     for _ in 0..4 {
         let bot_constructors = bot_constructors.clone();
         let bot_configs = bot_configs.clone();
+        let mut totals = BotScores::new();
         handles.push(std::thread::spawn(move || {
             // Maak hier pas de bot-instanties aan:
-            run_tournament(&bot_constructors, &bot_configs);
+            let scores = run_tournament(&bot_constructors, &bot_configs);
+            totals.merge_with(&scores);
+            totals
         }));
     }
+    let mut grand_totals = BotScores::new();
     for handle in handles {
-        handle.join().unwrap();
+        grand_totals.merge_with(&handle.join().unwrap());
+    }
+    //Print the final scores
+    println!("Final Scores after {} games:", grand_totals.total_games);
+    for (bot, score) in grand_totals.scores {
+        println!("{}: {:?}", bot, score);
     }
 }

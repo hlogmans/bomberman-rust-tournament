@@ -13,7 +13,7 @@ use crate::{
 // - Ensure that the tournament is fair and balanced.
 // - Provide a way to track the results of the tournament.
 //
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Score {
     pub wins: usize,
     pub losses: usize,
@@ -22,11 +22,15 @@ pub struct Score {
 
 pub struct BotScores {
     pub scores: Vec<(String, Score)>,
+    pub total_games: usize,
 }
 
 impl BotScores {
     pub fn new() -> Self {
-        BotScores { scores: Vec::new() }
+        BotScores {
+            scores: Vec::new(),
+            total_games: 0,
+        }
     }
 
     pub fn add_score(&mut self, botname: String, score_to_add: Score) {
@@ -39,9 +43,19 @@ impl BotScores {
             self.scores.push((botname, score_to_add));
         }
     }
+
+    pub fn merge_with(&mut self, other: &BotScores) {
+        for (botname, score) in other.scores.iter() {
+            self.add_score(botname.clone(), score.clone());
+        }
+        self.total_games += other.total_games;
+    }
 }
 
-pub fn run_tournament(bot_constructors: &Vec<BotConstructor>, bot_configs: &Vec<(usize, String)>) {
+pub fn run_tournament(
+    bot_constructors: &Vec<BotConstructor>,
+    bot_configs: &Vec<(usize, String)>,
+) -> BotScores {
     // Implement the tournament logic here
     //
     let start_time = std::time::Instant::now();
@@ -82,10 +96,12 @@ pub fn run_tournament(bot_constructors: &Vec<BotConstructor>, bot_configs: &Vec<
     }
 
     // Print the final scores
-    println!("Final Scores after {} games:", games_played);
-    for (bot, score) in bot_scores.scores {
-        println!("{}: {:?}", bot, score);
-    }
+    // println!("Final Scores after {} games:", games_played);
+    // for (bot, score) in bot_scores.scores {
+    //     println!("{}: {:?}", bot, score);
+    // }
+    bot_scores.total_games = games_played;
+    bot_scores
 }
 
 /// Run a game between two bots
