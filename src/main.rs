@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::{
     bot::available_bots,
     tournament::{BotScores, run_tournament},
@@ -28,6 +29,8 @@ fn main() {
     let num_threads = num_cpus::get();
     println!("Aantal nuttige threads: {}", num_threads);
 
+    let start_time = std::time::Instant::now();
+
     // Shared round counters for each thread
     let round_counters = Arc::new(Mutex::new(vec![0; num_threads]));
 
@@ -37,17 +40,18 @@ fn main() {
         loop {
             thread::sleep(Duration::from_millis(250));
             let counters = status_counters.lock().unwrap();
-            let mut line = String::from("Thread rounds: ");
+            //let line = String::from("Thread rounds: ");
             let mut total = 0;
-            for (i, count) in counters.iter().enumerate() {
+            for (_i, count) in counters.iter().enumerate() {
                 // Pad to 6 digits for alignment
-                line.push_str(&format!("T{}:{:6} ", i, count));
+                //line.push_str(&format!("T{}:{:6} ", i, count));
                 if *count != usize::MAX {
                     total += count;
                 }
             }
+            let speed = total as f64 / start_time.elapsed().as_secs_f64() / 1000.0;
             // Carriage return + flush to overwrite line
-            print!("Total: {}\r{}", total, line);
+            print!("Total: {}, Speed: {:.1}K rounds/s\r", total, speed);
             use std::io::{Write, stdout};
             stdout().flush().unwrap();
             // Stop condition: if all threads are done (negative value as marker)
