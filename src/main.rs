@@ -15,7 +15,7 @@ use std::thread;
 use std::time::Duration;
 
 fn main() {
-    let threadcount = 4;
+    use num_cpus;
     let bot_constructors = available_bots();
     let bot_configs = vec![
         (1, "Bot1-Easy".to_string()),
@@ -24,8 +24,12 @@ fn main() {
         (0, "Bot4-Random".to_string()),
     ];
 
+    // Dynamisch aantal threads op basis van CPU cores
+    let num_threads = num_cpus::get();
+    println!("Aantal nuttige threads: {}", num_threads);
+
     // Shared round counters for each thread
-    let round_counters = Arc::new(Mutex::new(vec![0; threadcount]));
+    let round_counters = Arc::new(Mutex::new(vec![0; num_threads]));
 
     // Status thread: print every 250ms
     let status_counters = round_counters.clone();
@@ -54,10 +58,10 @@ fn main() {
         println!(); // Move to next line after finishing
     });
 
-    // Start 4 threads, elke thread maakt zijn eigen bots aan
+    // Start threads, elke thread maakt zijn eigen bots aan
     let mut handles = Vec::new();
 
-    for thread_idx in 0..threadcount {
+    for thread_idx in 0..num_threads {
         let bot_constructors = bot_constructors.clone();
         let bot_configs = bot_configs.clone();
         let mut totals = BotScores::new();
