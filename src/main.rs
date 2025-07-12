@@ -10,7 +10,12 @@ mod map;
 mod shrink;
 mod tournament;
 
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
+
 fn main() {
+    let threadcount = 4;
     let bot_constructors = available_bots();
     let bot_configs = vec![
         (1, "Bot1-Easy".to_string()),
@@ -19,16 +24,51 @@ fn main() {
         (0, "Bot4-Random".to_string()),
     ];
 
+    // Shared round counters for each thread
+    let round_counters = Arc::new(Mutex::new(vec![0; threadcount]));
+
+    // Status thread: print every 250ms
+    let status_counters = round_counters.clone();
+    let status_handle = thread::spawn(move || {
+        loop {
+            thread::sleep(Duration::from_millis(250));
+            let counters = status_counters.lock().unwrap();
+            let mut line = String::from("Thread rounds: ");
+            let mut total = 0;
+            for (i, count) in counters.iter().enumerate() {
+                // Pad to 6 digits for alignment
+                line.push_str(&format!("T{}:{:6} ", i, count));
+                if *count != usize::MAX {
+                    total += count;
+                }
+            }
+            // Carriage return + flush to overwrite line
+            print!("Total: {}\r{}", total, line);
+            use std::io::{Write, stdout};
+            stdout().flush().unwrap();
+            // Stop condition: if all threads are done (negative value as marker)
+            if counters.iter().all(|&c| c == usize::MAX) {
+                break;
+            }
+        }
+        println!(); // Move to next line after finishing
+    });
+
     // Start 4 threads, elke thread maakt zijn eigen bots aan
     let mut handles = Vec::new();
 
-    for _ in 0..4 {
+    for thread_idx in 0..threadcount {
         let bot_constructors = bot_constructors.clone();
         let bot_configs = bot_configs.clone();
         let mut totals = BotScores::new();
-        handles.push(std::thread::spawn(move || {
-            // Maak hier pas de bot-instanties aan:
-            let scores = run_tournament(&bot_constructors, &bot_configs);
+        let round_counters = round_counters.clone();
+        handles.push(thread::spawn(move || {
+            // Geef thread index en Arc door
+            let scores = run_tournament(
+                &bot_constructors,
+                &bot_configs,
+                Some((thread_idx, round_counters)),
+            );
             totals.merge_with(&scores);
             totals
         }));
@@ -37,6 +77,16 @@ fn main() {
     for handle in handles {
         grand_totals.merge_with(&handle.join().unwrap());
     }
+
+    // Mark all threads as done for status thread
+    {
+        let mut counters = round_counters.lock().unwrap();
+        for c in counters.iter_mut() {
+            *c = usize::MAX;
+        }
+    }
+    status_handle.join().unwrap();
+
     //Print the final scores
     println!("Final Scores after {} games:", grand_totals.total_games);
     for (bot, score) in grand_totals.scores {

@@ -52,9 +52,12 @@ impl BotScores {
     }
 }
 
+use std::sync::{Arc, Mutex};
+
 pub fn run_tournament(
     bot_constructors: &Vec<BotConstructor>,
     bot_configs: &Vec<(usize, String)>,
+    round_counter: Option<(usize, Arc<Mutex<Vec<usize>>>)>,
 ) -> BotScores {
     // Implement the tournament logic here
     //
@@ -70,6 +73,14 @@ pub fn run_tournament(
 
     loop {
         games_played += 1;
+
+        // Update round counter if provided
+        if let Some((thread_idx, ref counter)) = round_counter {
+            let mut vec = counter.lock().unwrap();
+            if thread_idx < vec.len() {
+                vec[thread_idx] = games_played;
+            }
+        }
 
         // break if time limit is reached
         if start_time.elapsed() >= time_limit {
