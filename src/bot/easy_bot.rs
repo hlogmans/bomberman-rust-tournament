@@ -55,10 +55,6 @@ impl Bot for EasyBot {
         self.map_settings = map_settings.clone();
         true
     }
-
-    fn clone_bot(&self) -> Box<dyn Bot> {
-        Box::new(self.clone())
-    }
 }
 
 impl Coord {

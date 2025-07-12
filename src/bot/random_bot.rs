@@ -42,8 +42,4 @@ impl Bot for RandomBot {
         self.id = bot_id;
         true
     }
-
-    fn clone_bot(&self) -> Box<dyn Bot> {
-        Box::new(self.clone())
-    }
 }

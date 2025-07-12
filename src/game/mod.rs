@@ -105,15 +105,6 @@ impl Game {
         self.alive_players = (0..self.bots.len()).collect();
         self.alive_players.shuffle(&mut rng);
 
-        // output the player order for this game
-        let player_names_list: Vec<_> = self
-            .alive_players
-            .iter()
-            .map(|&i| self.bots[i].name())
-            .collect();
-        // let pnl = player_names_list.join(", ");
-        // println!("{}", pnl);
-
         // call start_game for each bot
         for (i, bot) in self.bots.iter_mut().enumerate() {
             bot.start_game(&self.map_settings, i);
@@ -295,7 +286,7 @@ impl Game {
 
     /// process the bombs. If there is a winner, return true. Then not all bombs might have been processed.
     /// It stops immediately if a winner is found.
-    fn process_bombs(&mut self, logging_callback: &Option<&mut dyn FnMut(String)>) -> bool {
+    fn process_bombs(&mut self, _logging_callback: &Option<&mut dyn FnMut(String)>) -> bool {
         // step one: check for all bombs that have 1 round left, those will explode this turn
         // changed to a while loop
 
