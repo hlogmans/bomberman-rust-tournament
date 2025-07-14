@@ -11,11 +11,7 @@ pub struct RandomBot {
     pub id: usize,
 }
 
-impl RandomBot {
-    pub fn new(name: String) -> Self {
-        RandomBot { name, id: 0 }
-    }
-}
+impl RandomBot {}
 
 impl Bot for RandomBot {
     fn name(&self) -> String {
@@ -41,5 +37,14 @@ impl Bot for RandomBot {
     fn start_game(&mut self, _: &MapSettings, bot_id: usize) -> bool {
         self.id = bot_id;
         true
+    }
+}
+
+impl RandomBot {
+    pub fn new() -> Self {
+        RandomBot {
+            name: "RandomBot".to_string(),
+            id: 0,
+        }
     }
 }

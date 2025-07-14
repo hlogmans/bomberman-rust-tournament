@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+
 use crate::{
     bot::available_bots,
     tournament::{BotScores, run_tournament},
@@ -54,6 +55,7 @@ fn main() {
             print!("Total: {total}, Speed: {speed:.1}K rounds/s\r");
             use std::io::{Write, stdout};
             stdout().flush().unwrap();
+
             // Stop condition: if all threads are done (negative value as marker)
             if counters.iter().all(|&c| c == usize::MAX) {
                 break;
@@ -66,12 +68,12 @@ fn main() {
     let mut handles = Vec::new();
 
     for thread_idx in 0..num_threads {
-        let bot_constructors = bot_constructors.clone();
         let bot_configs = bot_configs.clone();
         let mut totals = BotScores::new();
         let round_counters = round_counters.clone();
         handles.push(thread::spawn(move || {
             // Geef thread index en Arc door
+            let bot_constructors = available_bots();
             let scores = run_tournament(
                 &bot_constructors,
                 &bot_configs,

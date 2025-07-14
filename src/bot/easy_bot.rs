@@ -81,9 +81,9 @@ impl Coord {
 }
 
 impl EasyBot {
-    pub fn new(name: String) -> Self {
+    pub fn new() -> Self {
         EasyBot {
-            name,
+            name: "EasyBot".to_string(),
             id: 0,
             nextmoves: Vec::new(),
             map_settings: MapSettings::default(),

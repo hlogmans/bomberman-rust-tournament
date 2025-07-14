@@ -93,8 +93,8 @@ pub fn run_tournament(
             idx2 = rand.random_range(0..botcount);
         }
         // pick two bots at random
-        let bot1 = bot_constructors[bot_configs[idx1].0](&bot_configs[idx1].1);
-        let bot2 = bot_constructors[bot_configs[idx2].0](&bot_configs[idx2].1);
+        let bot1 = bot_constructors[bot_configs[idx1].0]();
+        let bot2 = bot_constructors[bot_configs[idx2].0]();
 
         let game_bots: Vec<Box<dyn Bot>> = vec![bot1, bot2];
 

@@ -13,6 +13,7 @@ pub mod random_bot;
 use crate::coord::Coord;
 use crate::game::map_settings::MapSettings;
 use crate::map::{Command, Map};
+use std::collections::HashMap;
 
 pub trait Bot {
     fn name(&self) -> String;
@@ -22,12 +23,36 @@ pub trait Bot {
     fn get_move(&mut self, map: &Map, player_location: Coord) -> Command;
 }
 
-pub type BotConstructor = fn(&str) -> Box<dyn Bot>;
+pub type BotConstructor = Box<dyn Fn() -> Box<dyn Bot>>;
+
+pub fn bot_registry() -> HashMap<&'static str, BotConstructor> {
+    let mut map: HashMap<&'static str, BotConstructor> = HashMap::new();
+    map.insert(
+        "RandomBot",
+        Box::new(|| Box::new(crate::bot::random_bot::RandomBot::new()) as Box<dyn Bot>)
+            as BotConstructor,
+    );
+    map.insert(
+        "EasyBot",
+        Box::new(|| Box::new(crate::bot::easy_bot::EasyBot::new()) as Box<dyn Bot>)
+            as BotConstructor,
+    );
+    // Voeg hier nieuwe bots toe!
+    map
+}
+
+pub fn instantiate_bots(names: &[&str]) -> Vec<Box<dyn Bot>> {
+    let registry = bot_registry();
+    names
+        .iter()
+        .filter_map(|name| registry.get(*name).map(|ctor| ctor()))
+        .collect()
+}
 
 pub fn available_bots() -> Vec<BotConstructor> {
     vec![
-        |name| Box::new(random_bot::RandomBot::new(name.to_string())),
-        |name| Box::new(easy_bot::EasyBot::new(name.to_string())),
+        Box::new(|| Box::new(random_bot::RandomBot::new())),
+        Box::new(|| Box::new(easy_bot::EasyBot::new())),
         // Voeg hier nieuwe bots toe!
     ]
 }
