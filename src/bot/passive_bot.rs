@@ -21,14 +21,14 @@ impl PassiveBot {
     /// Is `loc` in the straight-line blast zone of any bomb (current dont care about timer)
     fn is_danger(&self, map: &Map, loc: Coord) -> bool {
         map.bombs.iter()
-            .filter(|b| b.timer <= self.map_settings.bombtimer)
+            .filter(|b| b.timer <= self.map_settings.bombtimer) //now all can be changed later
             .any(|b| {                
                 let same_row = b.position.row.get() == loc.row.get();
                 let same_col = b.position.col.get() == loc.col.get();
                 let row_dist = (b.position.row.get() as i32 - loc.row.get() as i32).abs() as usize;
                 let col_dist = (b.position.col.get() as i32 - loc.col.get() as i32).abs() as usize;
 
-                (same_row && col_dist <= self.map_settings.bombradius) || (same_col && row_dist <= self.map_settings.bombradius)
+                (same_row && col_dist <= self.map_settings.bombradius + 2) || (same_col && row_dist <= self.map_settings.bombradius + 2) //bombs scary stay even 2 more tiles away than blast
             })
     }
 
