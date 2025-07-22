@@ -19,10 +19,12 @@ fn main() {
     use num_cpus;
     let bot_constructors = available_bots();
     let bot_configs = vec![
-        (1, "Bot1-Easy".to_string()),
-        (1, "Bot-Easy2".to_string()),
-        (0, "Bot3-Random".to_string()),
-        (0, "Bot4-Random".to_string()),
+        (2, "Bot1-PassiveBot".to_string()),
+        (2, "Bot2-PassiveBot".to_string()),
+        (1, "Bot3-Easy".to_string()),
+        (1, "Bot4-Easy".to_string()),
+        (0, "Bot5-Random".to_string()),
+        (0, "Bot6-Random".to_string()),
     ];
 
     // Dynamisch aantal threads op basis van CPU cores
