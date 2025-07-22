@@ -97,9 +97,13 @@ fn main() {
     }
     status_handle.join().unwrap();
 
-    //Print the final scores
+    // Sort scores by number of wins in descending order
+    let mut sorted_scores = grand_totals.scores.clone();
+    sorted_scores.sort_by(|a, b| b.1.wins.cmp(&a.1.wins));
+
+    // Print the final scores
     println!("Final Scores after {} games:", grand_totals.total_games);
-    for (bot, score) in grand_totals.scores {
+    for (bot, score) in sorted_scores {
         println!("{}: {:?}", bot, score);
     }
 }
