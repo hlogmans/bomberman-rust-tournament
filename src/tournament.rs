@@ -46,7 +46,7 @@ impl BotScores {
 
     pub fn merge_with(&mut self, other: &BotScores) {
         for (botname, score) in other.scores.iter() {
-            self.add_score(botname.clone(), score.clone());
+            self.add_score(botname.clone(), *score);
         }
         self.total_games += other.total_games;
     }
@@ -55,8 +55,8 @@ impl BotScores {
 use std::sync::{Arc, Mutex};
 
 pub fn run_tournament(
-    bot_constructors: &Vec<BotConstructor>,
-    bot_configs: &Vec<(usize, String)>,
+    bot_constructors: &[BotConstructor],
+    bot_configs: &[(usize, String)],
     round_counter: Option<(usize, Arc<Mutex<Vec<usize>>>)>,
 ) -> BotScores {
     // Implement the tournament logic here
