@@ -1,5 +1,3 @@
-use rand::Rng;
-
 use crate::{
     bot::Bot,
     coord::Coord,
@@ -33,7 +31,7 @@ impl PassiveBot {
     }
 
     /// All legal moves (Up/Down/Left/Right/Wait) that land on a space and aren’t dangerous.
-    fn safe_moves(&self, map: &Map, me: Coord) -> Vec<Command> {
+    fn safe_moves(&self, map: &Map, me: Coord) -> Vec<(Command, Coord)> {
         let mut opts = Vec::new();
         for &(cmd, neighbor) in &[
             (Command::Up,    me.move_up()),
@@ -45,11 +43,30 @@ impl PassiveBot {
             if let Some(nc) = neighbor {
                 let idx = nc.row.get() * map.width + nc.col.get();
                 if map.grid[idx] == ' ' && !self.is_danger(map, nc) {
-                    opts.push(cmd);
+                    opts.push((cmd, nc));
                 }
             }
         }
         opts
+    }
+
+    fn get_best_safe_move(&self, map: &Map, safe: &Vec<(Command, Coord)>) -> Command {
+        let center_row = map.height / 2;
+        let center_col = map.width / 2;
+
+        let best = safe.iter()
+            .max_by_key(|(_, coord)| {
+                let row_diff = (coord.row.get() as isize - center_row as isize).abs();
+                let col_diff = (coord.col.get() as isize - center_col as isize).abs();
+                let center_score = -(row_diff + col_diff); // closer to center = higher score
+
+                let escape_routes = self.safe_moves(map, *coord).len();
+
+                return center_score * 2 + escape_routes as isize
+            })
+            .unwrap();
+
+        best.0
     }
 }
 
@@ -65,15 +82,13 @@ impl Bot for PassiveBot {
     }
 
     fn get_move(&mut self, map: &Map, me: Coord) -> Command {
-        let safe = self.safe_moves(map, me);
-        
-        // (2) Otherwise pick a random safe move:
-        if !safe.is_empty() {
-            let mut rng = rand::rng();
-            return *safe.get(rng.random_range(0..safe.len())).unwrap();
-        }
+       let safe = self.safe_moves(map, me);
 
+        if !safe.is_empty() {
+            return self.get_best_safe_move(map, &safe);
+        }  
+        
         // (3) Else, wait.
-        Command::Wait
+        return Command::Wait;
     }
 }
