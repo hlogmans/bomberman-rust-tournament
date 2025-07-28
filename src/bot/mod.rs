@@ -9,6 +9,7 @@
 
 pub mod easy_bot;
 pub mod random_bot;
+pub mod fuzzy_bot;
 
 use crate::coord::Coord;
 use crate::game::map_settings::MapSettings;
