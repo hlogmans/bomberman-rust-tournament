@@ -23,6 +23,7 @@ fn main() {
         (1, "Bot-Easy2".to_string()),
         (0, "Bot3-Random".to_string()),
         (0, "Bot4-Random".to_string()),
+        (2, "IAmTheDanger".to_string()),
     ];
 
     // Dynamisch aantal threads op basis van CPU cores
