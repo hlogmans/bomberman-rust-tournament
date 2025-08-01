@@ -10,6 +10,7 @@ use crate::{
     game::map_settings::MapSettings,
     map::{Command, Map},
 };
+use crate::bot::fuzzy_bot::fuzzy_logic::fuzzy_ai::handle_intent;
 
 #[derive(Clone)]
 pub struct FuzzyBot {
@@ -27,8 +28,15 @@ impl FuzzyBot {
         }
     }
 
-    fn get_intent() -> Intent{
-        decide()
+    fn get_intent(&self, map: &Map, current_location: Coord) -> Intent{
+        let name = &self.name;
+        
+        decide(FuzzyInput {
+            map: map,
+            bot_name: name.clone(),
+            current_position: current_location,
+            map_settings: &self.map_settings
+        })
     }
 }
 
@@ -38,9 +46,8 @@ impl Bot for FuzzyBot {
     }
 
     fn get_move(&mut self, map: &Map, player_location: Coord) -> Command {
-        let inputs = self.get_inputs(map, player_location);
-        let (_intent, dir) = fuzzy_ai::decide(&inputs);
-        dir
+        let intent = self.get_intent(map, player_location);
+        handle_intent(intent)
     }
 
     fn start_game(&mut self, map_settings: &MapSettings, bot_id: usize) -> bool {

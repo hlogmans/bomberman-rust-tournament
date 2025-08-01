@@ -6,9 +6,5 @@ pub struct FuzzyInput<'a> {
     pub map: &'a Map,
     pub bot_name: String,
     pub current_position: Coord,
-    pub map_settings: MapSettings
-}
-
-impl FuzzyInput {
-    pub fn new(map: &map)
+    pub map_settings: &'a MapSettings
 }

@@ -1,6 +1,8 @@
+use crate::bot::fuzzy_bot::fuzzy_logic::fuzzy_input::FuzzyInput;
 use crate::bot::fuzzy_bot::fuzzy_logic::manhattan::manhattan;
 use crate::coord::{Col, Coord, Row};
-use crate::map::{Bomb, CellType, Map};
+use crate::game::map_settings::MapSettings;
+use crate::map::{Bomb, CellType, Command, Map};
 
 pub struct FuzzyLogic;
 
@@ -38,8 +40,8 @@ impl FuzzyLogic {
                     if !blocked_by_wall {
                         let relevant_distance = radius * 3;
                         let dist_score =
-                            FuzzyLogic::closeness(distance_to_bomb, relevant_distance);
-                        let time_score = FuzzyLogic::danger_level(bomb.timer) as f64;
+                            Self::closeness(distance_to_bomb, relevant_distance);
+                        let time_score = Self::danger_level(bomb.timer) as f64;
                         total_danger += (dist_score * time_score).clamp(0.0, 1.0);
                     }
                 }
@@ -106,5 +108,108 @@ impl FuzzyLogic {
         }
 
         false
+    }
+
+
+    fn get_tile_score(
+        map: &Map,
+        coord: Coord,
+        enemy_positions: &Vec<Coord>,
+        current_position: Coord,
+        map_settings: &MapSettings
+    ) -> f64 {
+        let cell_type = Self::get_cell_type(Self::get_cell(map, coord));
+
+        if cell_type != CellType::Empty && cell_type != CellType::Destroyable {
+            return f64::NEG_INFINITY; // not valid
+        }
+
+        let closest_enemy = enemy_positions
+            .iter()
+            .copied()
+            .min_by_key(|&e| manhattan(current_position, e))
+            .unwrap_or(coord); // fallback to self
+
+        let current_distance = manhattan(current_position, closest_enemy);
+        let new_distance = manhattan(coord, closest_enemy);
+
+        let is_closer = (current_distance > new_distance) as u8 as f64;
+
+
+        let closeness_score = Self::closeness(new_distance, map_settings.width -1 + map_settings.height -1);
+
+        let break_penalty = if cell_type == CellType::Destroyable { 0.3 } else { 0.0 };
+
+        let escape_routes = [
+            coord.move_up(),
+            coord.move_down(),
+            coord.move_left(),
+            coord.move_right(),
+        ]
+            .iter()
+            .filter_map(|&opt| opt)
+            .filter(|&n| Self::get_cell_type(Self::get_cell(map, n)) == CellType::Empty)
+            .count();
+
+        let escape_score = (escape_routes as f64) / 4.0;
+
+        let final_score =
+            is_closer * 0.4 +
+                closeness_score * 0.3 +
+                escape_score * 0.2 -
+                break_penalty * 0.3;
+
+        final_score
+    }
+
+    fn handle_move_decision(input: FuzzyInput) -> Command {
+        let neighbours = Self::get_moves_to_neighbour_coords(input.current_position);
+        let enemy_positions: Vec<Coord> = input.map.players
+            .iter()
+            .filter_map(|p | {
+                if p.name != input.bot_name {
+                    Some(p.position)
+                }
+                else {
+                    None
+                }
+            })
+            .collect();
+
+        let mut command = Command::Wait;
+        let mut highest_tile_score = 0.0;
+        for neighbour in neighbours {
+            let tile_score = FuzzyLogic::get_tile_score(input.map, neighbour.0, &enemy_positions, input.current_position, input.map_settings);
+            if tile_score > highest_tile_score {
+                highest_tile_score = tile_score;
+                
+                if Self::get_cell_type(Self::get_cell(input.map, neighbour.0)) == CellType::Destroyable {
+                    command = Command::PlaceBomb;
+                }
+                else {
+                    command = neighbour.1;
+                }
+            }
+        }
+
+        command
+    }
+
+    fn get_moves_to_neighbour_coords(position: Coord) -> Vec<(Coord, Command)> {
+        let directions = [
+            (position.move_up(), Command::Up),
+            (position.move_down(), Command::Down),
+            (position.move_left(), Command::Left),
+            (position.move_right(), Command::Right),
+        ];
+
+        let valid_neighbors: Vec<(Coord, Command)> = directions
+            .into_iter()
+            .filter_map(|(coord_opt, command)| {
+                coord_opt.map(|coord| (coord, command))
+            })
+            .collect();
+
+        valid_neighbors
     }
 }
