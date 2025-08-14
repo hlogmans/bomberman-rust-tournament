@@ -253,7 +253,6 @@ impl Game {
     fn bomb_explosion_locations(&self, location: Coord) -> Vec<Coord> {
         let mut locations = vec![location];
 
-        // Define the four directions to check
         let directions = [
             |c: Coord| c.move_up(),
             |c: Coord| c.move_down(),
@@ -265,10 +264,8 @@ impl Game {
         for direction in directions.iter() {
             let mut current_loc = Some(location);
             for _ in 1..=self.bomb_range {
-                // Update current_loc and check if it's a valid coordinate
                 current_loc = current_loc.and_then(|l| direction(l));
                 
-                // The value 'loc' is only available inside this 'if let' block
                 if let Some(loc) = current_loc {
                     let cell_type = self.map.cell_type(loc);
                     
@@ -290,7 +287,6 @@ impl Game {
                         }
                     }
                 } else {
-                    // We've moved off the map, so stop.
                     break;
                 }
             }
