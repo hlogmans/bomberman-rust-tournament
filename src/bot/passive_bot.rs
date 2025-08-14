@@ -42,13 +42,24 @@ impl PassiveBot {
         ] {
             if let Some(nc) = neighbor {
                 let idx = nc.row.get() * map.width + nc.col.get();
-                if map.grid[idx] == ' ' && !self.is_danger(map, nc) {
+                if map.grid[idx] == ' ' && !self.is_danger(map, nc) && !self.is_threatening_player(map, nc) {
                     opts.push((cmd, nc));
                 }
             }
         }
         opts
     }
+
+    fn is_threatening_player(&self, map: &Map, loc: Coord) -> bool {
+    map.players.iter()
+        .filter(|p| p.name != self.name)
+        .any(|p| {
+            let dist = (p.position.row.get() as i32 - loc.row.get() as i32).abs()
+                     + (p.position.col.get() as i32 - loc.col.get() as i32).abs();
+            dist <= 5
+        })
+    }
+
 
     fn get_best_safe_move(&self, map: &Map, safe: &Vec<(Command, Coord)>) -> Command {
         let center_row = map.height / 2;
@@ -58,16 +69,27 @@ impl PassiveBot {
             .max_by_key(|(_, coord)| {
                 let row_diff = (coord.row.get() as isize - center_row as isize).abs();
                 let col_diff = (coord.col.get() as isize - center_col as isize).abs();
-                let center_score = -(row_diff + col_diff); // closer to center = higher score
+                let center_score = -(row_diff + col_diff);
 
                 let escape_routes = self.safe_moves(map, *coord).len();
 
-                return center_score * 2 + escape_routes as isize
+                let player_dist = map.players.iter()
+                    .filter(|p| p.name != self.name)
+                    .map(|p| {
+                        let r = (p.position.row.get() as isize - coord.row.get() as isize).abs();
+                        let c = (p.position.col.get() as isize - coord.col.get() as isize).abs();
+                        r + c
+                    })
+                    .min()
+                    .unwrap_or(100); // large default if no players
+
+                center_score * 2 + escape_routes as isize + player_dist
             })
             .unwrap();
 
         best.0
     }
+
 }
 
 impl Bot for PassiveBot {
