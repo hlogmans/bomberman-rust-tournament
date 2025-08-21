@@ -19,8 +19,8 @@ fn main() {
     use num_cpus;
     let bot_constructors = available_bots();
     let bot_configs = vec![
-        (2, "Bot1-PassiveBot".to_string()),
-        (2, "Bot2-PassiveBot".to_string()),
+        (2, "Bot1-ArmyBot".to_string()),
+        (2, "Bot2-ArmyBot".to_string()),
         (1, "Bot3-Easy".to_string()),
         (1, "Bot4-Easy".to_string()),
         (0, "Bot5-Random".to_string()),
