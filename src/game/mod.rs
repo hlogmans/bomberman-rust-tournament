@@ -113,8 +113,11 @@ impl Game {
     }
 
     pub fn run(&mut self) -> GameResult {
+        self.display();
         while self.winner.is_none() {
             self.run_round(None, None, None);
+            self.display();
+            println!();
         }
         GameResult::build(self)
     } // loop until a winner is set
