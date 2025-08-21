@@ -42,24 +42,13 @@ impl PassiveBot {
         ] {
             if let Some(nc) = neighbor {
                 let idx = nc.row.get() * map.width + nc.col.get();
-                if map.grid[idx] == ' ' && !self.is_danger(map, nc) && !self.is_threatening_player(map, nc) {
+                if map.grid[idx] == ' ' && !self.is_danger(map, nc) {
                     opts.push((cmd, nc));
                 }
             }
         }
         opts
     }
-
-    fn is_threatening_player(&self, map: &Map, loc: Coord) -> bool {
-    map.players.iter()
-        .filter(|p| p.name != self.name)
-        .any(|p| {
-            let dist = (p.position.row.get() as i32 - loc.row.get() as i32).abs()
-                     + (p.position.col.get() as i32 - loc.col.get() as i32).abs();
-            dist <= 5
-        })
-    }
-
 
     fn get_best_safe_move(&self, map: &Map, safe: &Vec<(Command, Coord)>) -> Command {
         let center_row = map.height / 2;
@@ -73,17 +62,7 @@ impl PassiveBot {
 
                 let escape_routes = self.safe_moves(map, *coord).len();
 
-                let player_dist = map.players.iter()
-                    .filter(|p| p.name != self.name)
-                    .map(|p| {
-                        let r = (p.position.row.get() as isize - coord.row.get() as isize).abs();
-                        let c = (p.position.col.get() as isize - coord.col.get() as isize).abs();
-                        r + c
-                    })
-                    .min()
-                    .unwrap_or(100); // large default if no players
-
-                center_score * 2 + escape_routes as isize + player_dist
+                center_score * 2 + escape_routes as isize
             })
             .unwrap();
 
@@ -108,8 +87,8 @@ impl Bot for PassiveBot {
 
         if !safe.is_empty() {
             return self.get_best_safe_move(map, &safe);
-        }  
-        
+        }
+
         // (3) Else, wait.
         return Command::Wait;
     }

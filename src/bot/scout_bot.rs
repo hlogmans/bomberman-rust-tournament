@@ -77,6 +77,15 @@ impl ScoutBot {
 
             // bomb place and run
             Command::PlaceBomb, Command::Right, Command::Right, Command::Up,
+            Command::Down, Command::Right, Command:: Right,
+
+            // bomb place and run
+            Command::PlaceBomb, Command::Left, Command::Left, Command::Up,
+            Command::Down, Command::Down, Command::Down,
+
+            // bomb place and run
+            Command::PlaceBomb, Command::Up, Command::Up, Command::Right,
+
         ]
     }
 
@@ -125,8 +134,17 @@ impl ScoutBot {
 
             // bomb place and run
             Command::PlaceBomb, Command::Right, Command::Right, Command::Down,
+            Command::Up, Command::Right, Command::Right,
+
+            // bomb place and run
+            Command::PlaceBomb, Command::Left, Command::Left, Command::Down,
+            Command::Up, Command::Up, Command::Up,
+
+            // bomb place and run
+            Command::PlaceBomb, Command::Down, Command::Down, Command::Right,
         ]
     }
+
 }
 
 impl Bot for ScoutBot {
