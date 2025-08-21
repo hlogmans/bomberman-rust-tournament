@@ -29,7 +29,7 @@ pub fn available_bots() -> Vec<BotConstructor> {
     vec![
         |name| Box::new(random_bot::RandomBot::new(name.to_string())),
         |name| Box::new(easy_bot::EasyBot::new(name.to_string())),
-        // Voeg hier nieuwe bots toe!
+        |name | Box::new(fuzzy_bot::fuzzy_bot::FuzzyBot::new(name.to_string())),
     ]
 }
 

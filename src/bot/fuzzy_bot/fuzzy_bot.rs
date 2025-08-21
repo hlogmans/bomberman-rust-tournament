@@ -1,3 +1,4 @@
+use rand::Rng;
 use super::fuzzy_logic::{
     fuzzy_ai::{decide, Intent},
     fuzzy_input::FuzzyInput,
@@ -28,16 +29,27 @@ impl FuzzyBot {
         }
     }
 
-    fn get_intent(&self, map: &Map, current_location: Coord) -> Intent{
+    fn get_intent(&self, map: &Map, current_location: Coord) -> Command{
         let name = &self.name;
-        
-        decide(FuzzyInput {
-            map: map,
+
+
+        let intent = decide(FuzzyInput {
+            map,
             bot_name: name.clone(),
+            bot_id: self.id,
+            current_position: current_location,
+            map_settings: &self.map_settings
+        });
+
+        handle_intent(intent, FuzzyInput {
+            map,
+            bot_name: name.clone(),
+            bot_id: self.id,
             current_position: current_location,
             map_settings: &self.map_settings
         })
     }
+
 }
 
 impl Bot for FuzzyBot {
@@ -46,8 +58,7 @@ impl Bot for FuzzyBot {
     }
 
     fn get_move(&mut self, map: &Map, player_location: Coord) -> Command {
-        let intent = self.get_intent(map, player_location);
-        handle_intent(intent)
+        self.get_intent(map, player_location)
     }
 
     fn start_game(&mut self, map_settings: &MapSettings, bot_id: usize) -> bool {
