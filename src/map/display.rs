@@ -18,7 +18,7 @@ impl MapDisplay for ConsoleDisplay {
                     crate::map::cell::CellType::Bomb => "💣",
                     crate::map::cell::CellType::Player => "😀",
                 };
-                print!("{}", symbol);
+                print!("{symbol}");
             }
             println!();
         }

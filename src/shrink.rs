@@ -58,24 +58,24 @@ pub fn calculate_shrink_location(
     // calculate the position of the tile in the current layer
     // if the shrink_number is less than the width, it is in the top row
     if shrink_number < layer_width {
-        return Some(Coord::from(layer + shrink_number, layer));
+        Some(Coord::from(layer + shrink_number, layer))
     // if the shrink number is less than the width + height, then it is the right column.
     } else if shrink_number < layer_width + layer_height - 1 {
         shrink_number -= layer_width;
-        return Some(Coord::from(
+        Some(Coord::from(
             layer + layer_width - 1,
             layer + shrink_number + 1,
-        ));
+        ))
     } else if shrink_number < 2 * layer_width + layer_height - 2 {
         shrink_number -= layer_width + layer_height - 1;
         // this is the bottom row
-        return Some(Coord::from(
+        Some(Coord::from(
             layer + layer_width - shrink_number - 2,
             layer + layer_height - 1,
-        ));
+        ))
     } else {
         shrink_number -= (2 * layer_width) + layer_height - 2;
-        return Some(Coord::from(layer, layer + layer_height - shrink_number - 2));
+        Some(Coord::from(layer, layer + layer_height - shrink_number - 2))
     }
 }
 
@@ -93,7 +93,7 @@ fn calculate_layer_tiles(width: usize, height: usize, layer: usize) -> usize {
     // Calculate the number of tiles in the current layer
     let layer_width = width - 2 * layer;
     let layer_height = height - 2 * layer;
-    if layer_width <= 0 || layer_height <= 0 {
+    if layer_width == 0 || layer_height == 0 {
         return 0; // No valid tiles in this layer
     }
     // Each layer has a top row, right column, bottom row, and left column

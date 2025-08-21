@@ -19,7 +19,7 @@ impl GameResult {
             winner,
             replay_data: replay_data
                 .iter()
-                .map(|command| command.1.clone())
+                .map(|command| command.1)
                 .collect(),
             game_settings,
             rounds: game.turn,
