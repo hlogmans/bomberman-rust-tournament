@@ -13,7 +13,7 @@ impl GameResult {
     pub fn build(game: &Game) -> Self {
         let winner = game.winner_name().unwrap_or_default();
         let replay_data = game.player_actions.clone();
-        let game_settings = game.map_settings.clone();
+        let game_settings = game.map.map_settings.clone();
 
         GameResult {
             winner,

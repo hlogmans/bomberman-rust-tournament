@@ -3,6 +3,7 @@ pub mod cell;
 pub mod display;
 pub mod player;
 
+use std::cell::Cell;
 pub use bomb::*;
 pub use cell::*;
 pub use display::*;
@@ -12,9 +13,11 @@ use crate::coord::Col;
 use crate::coord::Coord;
 use crate::coord::Row;
 use crate::coord::ValidCoord;
+use crate::game::map_settings::MapSettings;
 
 // a map is a 2D vector of characters. But also contains a list of players and a turn number.
 pub struct Map {
+    pub map_settings: MapSettings,
     pub grid: Vec<char>,
     pub height: usize,
     pub width: usize,
@@ -24,7 +27,7 @@ pub struct Map {
 }
 
 impl Map {
-    pub fn create(width: usize, height: usize, playernames: Vec<String>) -> Self {
+    pub fn create(width: usize, height: usize, playernames: Vec<String>, map_settings: MapSettings) -> Self {
         // at least 2 players, at most 4 players
         if playernames.len() < 2 || playernames.len() > 4 {
             panic!("Invalid number of players: must be between 2 and 4");
@@ -57,6 +60,7 @@ impl Map {
         let grid = prepare_grid(width, height);
 
         let mut map = Map {
+            map_settings,
             grid,
             width,
             height,
@@ -167,8 +171,9 @@ impl Map {
         if self.bombs.iter().any(|bomb| bomb.position == position) {
             return; // A bomb already exists at this position, do not add another
         }
-        // Add a bomb at the given position with a timer of 5
-        self.bombs.push(Bomb { position, timer: 5 });
+        // Add a bomb at the given position with the map_settings bomb timer
+        let timer = self.map_settings.bombtimer;
+        self.bombs.push(Bomb { position,  timer});
     }
 
     /// Get the next bomb to explode from the list, if any. Use this method because processing the
@@ -176,7 +181,7 @@ impl Map {
     pub fn get_next_exploding_bomb_location(&self) -> Option<Coord> {
         // Get the next bomb that is about to explode, if any
         for bomb in &self.bombs {
-            if bomb.timer == 1 {
+            if bomb.timer == 0 {
                 return Some(bomb.position);
             }
         }
@@ -186,13 +191,14 @@ impl Map {
     /// remove a bomb from a certain location.
     pub fn remove_bomb(&mut self, position: Coord) {
         // Remove a bomb at the given position
+        self.set_cell(position, CellType::Empty);
         self.bombs.retain(|bomb| bomb.position != position);
     }
 
     pub fn bomb_timer_decrease(&mut self) {
-        // Decrease the timer of all bombs by 1, and remove bombs that have reached 0
+        // Decrease the timer of all bombs by 1 if they are not 0
         for bomb in &mut self.bombs {
-            if bomb.timer > 1 {
+            if bomb.timer > 0 {
                 bomb.timer -= 1; // Decrease the timer
             }
         }
@@ -243,7 +249,11 @@ impl Map {
             }
             _ => {
                 // clear the old position (will be filled again after wrapping up the map)
-                self.set_cell(player_position, CellType::Empty);
+                // don't clear if it's a bomb because this makes the bomb disappear visually
+                if self.cell_type(player_position) != CellType::Bomb {
+                    self.set_cell(player_position, CellType::Empty);
+                }
+
                 new_position(player_position, &command).map(|c| {
                     self.set_cell(c, CellType::Player);
                     self.set_player_position(player, c);
