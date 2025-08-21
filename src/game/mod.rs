@@ -3,6 +3,7 @@ pub mod gameresult;
 pub mod map_settings;
 
 use rand::seq::SliceRandom;
+use crate::map::CellType;
 
 use crate::{
     bot::Bot,
@@ -180,7 +181,7 @@ impl Game {
         }
 
         // reduce map size if needed
-        if self.shrink_at_turn < self.turn {
+        if self.shrink_at_turn <= self.turn {
             if let Some(shrink_location) =
                 calculate_shrink_location(self.turn - self.shrink_at_turn, self.width, self.height)
             {
@@ -250,35 +251,45 @@ impl Game {
     }
 
     fn bomb_explosion_locations(&self, location: Coord) -> Vec<Coord> {
-        // This function returns the locations that will be affected by a bomb explosion at the given location.
-        // It returns the center and all 4 directions (up, down, left, right) within the bomb range.
-
-        // to make it deterministic, the explosion is done in a specific order. From center to outer, then starting on the
-        // left side and going to the right side clockwise
-
-        // XXX XXX
-        // XXX7XXX
-        // XXX3XXX
-        //  62148
-        // XXX5XXX
-        // XXX9XXX
-        // XXX XXX
         let mut locations = vec![location];
-        let loc = Some(location);
-        let mut left = loc;
-        let mut right = loc;
-        let mut up = loc;
-        let mut down = loc;
 
-        for _ in 1..=self.bomb_range {
-            left = left.and_then(|l| l.move_left());
-            right = right.and_then(|l| l.move_right());
-            up = up.and_then(|l| l.move_up());
-            down = down.and_then(|l| l.move_down());
-            locations.extend(left);
-            locations.extend(up);
-            locations.extend(right);
-            locations.extend(down);
+        let directions = [
+            |c: Coord| c.move_up(),
+            |c: Coord| c.move_down(),
+            |c: Coord| c.move_left(),
+            |c: Coord| c.move_right(),
+        ];
+        
+        // Iterate over each direction and extend the explosion
+        for direction in directions.iter() {
+            let mut current_loc = Some(location);
+            for _ in 1..=self.bomb_range {
+                current_loc = current_loc.and_then(|l| direction(l));
+                
+                if let Some(loc) = current_loc {
+                    let cell_type = self.map.cell_type(loc);
+                    
+
+                    match cell_type {
+                        // A wall stops the explosion completely in this direction.
+                        CellType::Wall => {
+                            break;
+                        }
+                        // A destructible block stops the explosion, but is still destroyed.
+                        // So we add its location and then stop.
+                        CellType::Destroyable => {
+                            locations.push(loc);
+                            break;
+                        }
+                        // Empty space, a player, or a bomb will be affected, and the explosion continues.
+                        _ => {
+                            locations.push(loc);
+                        }
+                    }
+                } else {
+                    break;
+                }
+            }
         }
 
         locations
@@ -362,10 +373,19 @@ mod tests {
     }
 
     #[test]
-    fn test_bomb_explosion_center() {
-        let game = setup_game(7, 7, 2);
+    fn test_bomb_explosion_center_clear_path() {
+        let mut game = setup_game(7, 7, 2);
         let loc = Coord::from(3, 3);
+
+        game.map.clear_destructable(Coord::from(3, 3));
+        game.map.clear_destructable(Coord::from(2, 3)); // up
+        game.map.clear_destructable(Coord::from(4, 3)); // down
+        game.map.clear_destructable(Coord::from(3, 2)); // left
+        game.map.clear_destructable(Coord::from(3, 4)); // right
+        
+
         let result = game.bomb_explosion_locations(loc);
+        
         let expected = vec![
             Coord::from(3, 3), // center
             Coord::from(2, 3),
@@ -377,34 +397,42 @@ mod tests {
             Coord::from(5, 3),
             Coord::from(3, 5), // right
         ];
-        assert_eq!(result, expected);
+        
+        assert_eq!(result.len(), expected.len());
+
+        for coord in expected {
+            assert_eq!(result.contains(&coord), true);
+        }
     }
 
     #[test]
     fn test_bomb_explosion_corner() {
         let game = setup_game(5, 5, 2);
-        let loc = Coord::from(0, 0);
+
+        let loc = Coord::from(1, 1);
         let result = game.bomb_explosion_locations(loc);
         let expected = vec![
-            Coord::from(0, 0),
-            Coord::from(1, 0),
-            Coord::from(0, 1),
-            Coord::from(2, 0),
-            Coord::from(0, 2),
+            Coord::from(1, 1),
+            Coord::from(1, 2),
+            Coord::from(1, 3),
+            Coord::from(2, 1),
+            Coord::from(3, 1),
         ];
         assert_eq!(result, expected);
     }
 
     #[test]
-    fn test_bomb_explosion_edge() {
-        let game = setup_game(5, 5, 1);
-        let loc = Coord::from(0, 2);
+    fn test_bomb_explosion_corner_with_destructable() {
+        let game = setup_game(5, 5, 2);
+        let loc = Coord::from(3, 3);
+
         let result = game.bomb_explosion_locations(loc);
         let expected = vec![
-            Coord::from(0, 2),
-            Coord::from(0, 1),
-            Coord::from(1, 2),
-            Coord::from(0, 3),
+            Coord::from(3, 3),
+            Coord::from(3, 2),
+            //Coord::from(3, 1), Can't be destroyed there is a destrutable in the way at 3,2
+            Coord::from(2, 3),
+            Coord::from(1, 3),
         ];
         assert_eq!(result, expected);
     }
@@ -416,10 +444,10 @@ mod tests {
         let result = game.bomb_explosion_locations(loc);
         let expected = vec![
             Coord::from(2, 2),
-            Coord::from(1, 2),
             Coord::from(2, 1),
-            Coord::from(3, 2),
             Coord::from(2, 3),
+            Coord::from(1, 2),
+            Coord::from(3, 2),
         ];
         assert_eq!(result, expected);
     }

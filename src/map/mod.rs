@@ -24,13 +24,6 @@ pub struct Map {
 }
 
 impl Map {
-    // fn new() -> Self {
-    //     Self {
-    //         grid: Vec::new(),
-    //         players: Vec::new(),
-    //         bombs: Vec::new(),
-    //     }
-    // }
     pub fn create(width: usize, height: usize, playernames: Vec<String>) -> Self {
         // at least 2 players, at most 4 players
         if playernames.len() < 2 || playernames.len() > 4 {
@@ -96,7 +89,7 @@ impl Map {
     }
 
     // get the BlockType at a given position
-    fn cell_type(&self, position: Coord) -> CellType {
+    pub fn cell_type(&self, position: Coord) -> CellType {
         if !position.is_valid(self.width, self.height) {
             return CellType::Wall; // Out of bounds is treated as a wall
         }
