@@ -180,7 +180,7 @@ impl Game {
         }
 
         // reduce map size if needed
-        if self.shrink_at_turn < self.turn {
+        if self.shrink_at_turn <= self.turn {
             if let Some(shrink_location) =
                 calculate_shrink_location(self.turn - self.shrink_at_turn, self.width, self.height)
             {
