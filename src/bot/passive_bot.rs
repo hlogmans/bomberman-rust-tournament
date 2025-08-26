@@ -5,6 +5,7 @@ use crate::{
     map::{Map, Command},
 };
 
+#[derive(Clone)]
 pub struct PassiveBot {
     name: String,
     id: usize,
