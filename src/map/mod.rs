@@ -12,9 +12,11 @@ use crate::coord::Col;
 use crate::coord::Coord;
 use crate::coord::Row;
 use crate::coord::ValidCoord;
+use crate::game::map_settings::MapSettings;
 
 // a map is a 2D vector of characters. But also contains a list of players and a turn number.
 pub struct Map {
+    pub map_settings: MapSettings,
     pub grid: Vec<char>,
     pub height: usize,
     pub width: usize,
@@ -24,14 +26,12 @@ pub struct Map {
 }
 
 impl Map {
-    // fn new() -> Self {
-    //     Self {
-    //         grid: Vec::new(),
-    //         players: Vec::new(),
-    //         bombs: Vec::new(),
-    //     }
-    // }
-    pub fn create(width: usize, height: usize, playernames: Vec<String>) -> Self {
+    pub fn create(
+        width: usize,
+        height: usize,
+        playernames: Vec<String>,
+        map_settings: MapSettings,
+    ) -> Self {
         // at least 2 players, at most 4 players
         if playernames.len() < 2 || playernames.len() > 4 {
             panic!("Invalid number of players: must be between 2 and 4");
@@ -52,7 +52,7 @@ impl Map {
         // The first player will be placed at (1, 1), the second player at (1, width - 2),
         // the third player at (height - 2, 1), and the fourth player at (height - 2, width - 2).
         // If there are less than 4 players, the remaining positions will not be used.
-        let player_locations = vec![
+        let player_locations = [
             Coord::new(Col::new(1), Row::new(1)),
             Coord::new(Col::new(1), Row::new(width - 2)),
             Coord::new(Col::new(height - 2), Row::new(1)),
@@ -64,6 +64,7 @@ impl Map {
         let grid = prepare_grid(width, height);
 
         let mut map = Map {
+            map_settings,
             grid,
             width,
             height,
@@ -72,8 +73,8 @@ impl Map {
                 .cloned()
                 .zip(player_locations.iter().cloned())
                 .map(|(name, position)| Player {
-                    name: name,
-                    position: position, // Initial position will be set later
+                    name,
+                    position, // Initial position will be set later
                 })
                 .collect(),
             bombs: Vec::new(),
@@ -96,7 +97,7 @@ impl Map {
     }
 
     // get the BlockType at a given position
-    fn cell_type(&self, position: Coord) -> CellType {
+    pub fn cell_type(&self, position: Coord) -> CellType {
         if !position.is_valid(self.width, self.height) {
             return CellType::Wall; // Out of bounds is treated as a wall
         }
@@ -163,7 +164,7 @@ impl Map {
         // Find the player and update their position
         if let Some(player) = self.get_player_mut(no) {
             player.position = new_position;
-            return; // Successfully updated the player's position
+            // Successfully updated the player's position
         };
         // If the player is not found, you might want to handle this case
         // For now, we do nothing
@@ -174,8 +175,9 @@ impl Map {
         if self.bombs.iter().any(|bomb| bomb.position == position) {
             return; // A bomb already exists at this position, do not add another
         }
-        // Add a bomb at the given position with a timer of 5
-        self.bombs.push(Bomb { position, timer: 5 });
+        // Add a bomb at the given position with the map_settings bomb timer
+        let timer = self.map_settings.bombtimer;
+        self.bombs.push(Bomb { position, timer });
     }
 
     /// Get the next bomb to explode from the list, if any. Use this method because processing the
@@ -183,7 +185,7 @@ impl Map {
     pub fn get_next_exploding_bomb_location(&self) -> Option<Coord> {
         // Get the next bomb that is about to explode, if any
         for bomb in &self.bombs {
-            if bomb.timer == 1 {
+            if bomb.timer == 0 {
                 return Some(bomb.position);
             }
         }
@@ -193,13 +195,14 @@ impl Map {
     /// remove a bomb from a certain location.
     pub fn remove_bomb(&mut self, position: Coord) {
         // Remove a bomb at the given position
+        self.set_cell(position, CellType::Empty);
         self.bombs.retain(|bomb| bomb.position != position);
     }
 
     pub fn bomb_timer_decrease(&mut self) {
-        // Decrease the timer of all bombs by 1, and remove bombs that have reached 0
+        // Decrease the timer of all bombs by 1 if they are not 0
         for bomb in &mut self.bombs {
-            if bomb.timer > 1 {
+            if bomb.timer > 0 {
                 bomb.timer -= 1; // Decrease the timer
             }
         }
@@ -213,7 +216,7 @@ impl Map {
             Some(p) => p,
             None => return false, // Player does not exist
         };
-        let new_position = new_position(player_position, &command).valid(map.width, map.height);
+        let new_position = new_position(player_position, command).valid(map.width, map.height);
 
         // Ensure the new position is within the bounds of the map
         if let Some(coord) = new_position {
@@ -250,7 +253,11 @@ impl Map {
             }
             _ => {
                 // clear the old position (will be filled again after wrapping up the map)
-                self.set_cell(player_position, CellType::Empty);
+                // don't clear if it's a bomb because this makes the bomb disappear visually
+                if self.cell_type(player_position) != CellType::Bomb {
+                    self.set_cell(player_position, CellType::Empty);
+                }
+
                 new_position(player_position, &command).map(|c| {
                     self.set_cell(c, CellType::Player);
                     self.set_player_position(player, c);
@@ -258,12 +265,12 @@ impl Map {
             }
         }
 
-        return true;
+        true
     }
 
     pub fn set_wall(&mut self, position: Coord) {
         // Set a wall at the given position
-        if position.is_valid(self.width.clone(), self.height.clone()) {
+        if position.is_valid(self.width, self.height) {
             self.set_cell(position, CellType::Wall);
         }
     }
@@ -273,7 +280,7 @@ impl Map {
             coord
                 .square_3x3()
                 .iter()
-                .for_each(|c| self.clear_destructable(c.clone()))
+                .for_each(|c| self.clear_destructable(*c))
         }
     }
 }
@@ -282,13 +289,14 @@ impl Map {
 /// - the outer line is walled
 /// - the line within the outer wall is destructable
 /// - every even row, and every even column contains a wall
-/// WWWWWWW line 0
-/// W.....W
-/// W.W.W.W line 2
-/// W.....W
-/// W.W.W.W
-/// W.....W
-/// WWWWWWW line 6
+///
+///  WWWWWWW line 0
+///  W.....W
+///  W.W.W.W line 2
+///  W.....W
+///  W.W.W.W
+///  W.....W
+///  WWWWWWW line 6
 pub fn prepare_grid(width: usize, height: usize) -> Vec<char> {
     // the grid is now filled with dots (destructable). I need to add walls.
     // first wall the top layer
@@ -330,28 +338,26 @@ impl Command {
 /// determine if you can move to a certain type of cell
 /// At the moment, only empty cells are considered movable.
 fn can_move_to(cell: CellType) -> bool {
-    return cell == CellType::Empty;
+    cell == CellType::Empty
 }
 
 // calculate the new position based on the command, just the location, not if it is valid or not.
 fn new_position(current_position: Coord, command: &Command) -> Option<Coord> {
     match command {
         Command::Up => {
-            return current_position.move_up(); // Move up
+            current_position.move_up() // Move up
         }
         Command::Down => {
-            return current_position.move_down(); // Move down, ensuring it doesn't go out of bounds
+            current_position.move_down() // Move down, ensuring it doesn't go out of bounds
         }
         Command::Left => {
-            return current_position.move_left(); // Move left
+            current_position.move_left() // Move left
         }
         Command::Right => {
-            return current_position.move_right(); // Move right, ensuring it doesn't go out of bounds
+            current_position.move_right() // Move right, ensuring it doesn't go out of bounds
         }
         // wait or bomb is no-move
-        Command::Wait | Command::PlaceBomb => {
-            return Some(current_position);
-        }
+        Command::Wait | Command::PlaceBomb => Some(current_position),
     }
 }
 
