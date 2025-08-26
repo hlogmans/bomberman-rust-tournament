@@ -67,6 +67,7 @@ impl Game {
             playernames: Vec::new(),
         };
 
+
         let map = Map::create(
             width,
             height,
@@ -74,12 +75,12 @@ impl Game {
             map_settings.clone()
         );
 
-        let endgame = map_settings.endgame.clone();
+        let endgame = map_settings.endgame;
 
         Game {
             map,
             bots: players,
-            player_count: player_count,
+            player_count,
             turn: 0,
             player_actions: Vec::new(),
             winner: None,
@@ -143,7 +144,7 @@ impl Game {
                 .bots
                 .get_mut(player_index)
                 .expect("Bot not found for player index");
-            let loc = self.map.get_player(player_index).unwrap().position.clone();
+            let loc = self.map.get_player(player_index).unwrap().position;
 
             // if the game is a replay, take the move from the Vec
             let bot_move;
@@ -185,8 +186,7 @@ impl Game {
                         && let Some(cb) = logging_callback
                     {
                         cb(format!(
-                            "Player {} has been removed from the game due to shrinking at location {:?}",
-                            player_name, shrink_location
+                            "Player {player_name} has been removed from the game due to shrinking at location {shrink_location:?}"
                         ));
                     }
 
@@ -219,7 +219,7 @@ impl Game {
             callback(&progress);
         }
 
-        return false;
+        false
     }
 
     /// Check if there is a winner after each round
@@ -229,7 +229,7 @@ impl Game {
         let alive_count = self.alive_players.len();
         if alive_count == 1 {
             // Set the winner to the index of the last remaining player
-            self.winner = self.alive_players.first().map(|x| x.clone()); // Assuming the first player in alive_players is the winner
+            self.winner = self.alive_players.first().copied(); // Assuming the first player in alive_players is the winner
             return true;
         } else if alive_count == 0 {
             // If no players are left, set winner to None or handle as needed

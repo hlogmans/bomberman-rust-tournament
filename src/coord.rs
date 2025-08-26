@@ -99,8 +99,8 @@ impl Coord {
             Command::Down => self.move_down(),
             Command::Left => self.move_left(),
             Command::Right => self.move_right(),
-            Command::PlaceBomb => Some(self.clone()),
-            Command::Wait => Some(self.clone()),
+            Command::PlaceBomb => Some(*self),
+            Command::Wait => Some(*self),
         }
     }
 
