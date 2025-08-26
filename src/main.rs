@@ -24,6 +24,9 @@ fn main() {
         (1, "Bot2-Easy".to_string()),
         (0, "Bot3-Random".to_string()),
         (0, "Bot4-Random".to_string()),
+        (2, "GBot-G".to_string()),
+        (3, "CuddleBot-G".to_string()),
+        (4, "PassiveBot".to_string()),
     ];
 
     // Dynamisch aantal threads op basis van CPU cores
@@ -98,8 +101,19 @@ fn main() {
     status_handle.join().unwrap();
 
     //Print the final scores
-    println!("Final Scores after {} games:", grand_totals.total_games);
+    /*println!("Final Scores after {} games:", grand_totals.total_games);
     for (bot, score) in grand_totals.scores {
-        println!("{bot}: {score:?}");
+        println!("{}: {:?}", bot, score);
+    }*/
+
+    // Sort scores by number of wins in descending order
+    let mut sorted_scores = grand_totals.scores.clone();
+    sorted_scores.sort_by(|a, b| b.1.wins.cmp(&a.1.wins));
+ 
+    //Print the final scores
+    println!("Final Scores after {} games:", grand_totals.total_games);
+    for (bot, score) in sorted_scores {
+        println!("{bot}: WinProcentage: {}% {score:?}", (score.wins as f64 / score.total_games as f64) * 100.0);
+
     }
 }

@@ -9,6 +9,9 @@
 
 pub mod easy_bot;
 pub mod random_bot;
+pub mod gerhard;
+pub mod cuddle_bot;
+pub mod passive_bot;
 
 use crate::coord::Coord;
 use crate::game::map_settings::MapSettings;
@@ -53,6 +56,10 @@ pub fn available_bots() -> Vec<BotConstructor> {
     vec![
         Box::new(|| Box::new(random_bot::RandomBot::new())),
         Box::new(|| Box::new(easy_bot::EasyBot::new())),
+        Box::new(|| Box::new(gerhard::GerhardBot::new())),
+        Box::new(|| cuddle_bot::CuddleBot::new())),
+        Box::new(|| passive_bot::PassiveBot::new())),
+
         // Voeg hier nieuwe bots toe!
     ]
 }
