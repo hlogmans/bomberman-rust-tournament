@@ -18,6 +18,12 @@ pub struct ScoutBot {
     initialized: bool,
 }
 
+impl Default for ScoutBot {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ScoutBot {
     pub fn new() -> Self {
         ScoutBot {
@@ -162,6 +168,6 @@ impl Bot for ScoutBot {
         }
 
         // Rotation mode
-        return self.passive_bot.get_move(_map, _player_location);
+        self.passive_bot.get_move(_map, _player_location)
     }
 }

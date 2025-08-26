@@ -258,10 +258,10 @@ impl Map {
                     self.set_cell(player_position, CellType::Empty);
                 }
 
-                new_position(player_position, &command).map(|c| {
+                if let Some(c) = new_position(player_position, &command) {
                     self.set_cell(c, CellType::Player);
                     self.set_player_position(player, c);
-                });
+                };
             }
         }
 

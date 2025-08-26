@@ -12,6 +12,12 @@ pub struct PassiveBot {
     map_settings: MapSettings,
 }
 
+impl Default for PassiveBot {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PassiveBot {
     pub fn new() -> Self {
         PassiveBot {
@@ -29,8 +35,10 @@ impl PassiveBot {
             .any(|b| {
                 let same_row = b.position.row.get() == loc.row.get();
                 let same_col = b.position.col.get() == loc.col.get();
-                let row_dist = (b.position.row.get() as i32 - loc.row.get() as i32).abs() as usize;
-                let col_dist = (b.position.col.get() as i32 - loc.col.get() as i32).abs() as usize;
+                let row_dist =
+                    (b.position.row.get() as i32 - loc.row.get() as i32).unsigned_abs() as usize;
+                let col_dist =
+                    (b.position.col.get() as i32 - loc.col.get() as i32).unsigned_abs() as usize;
 
                 (same_row && col_dist <= self.map_settings.bombradius + 2)
                     || (same_col && row_dist <= self.map_settings.bombradius + 2) //bombs scary stay even 2 more tiles away than blast
@@ -57,7 +65,7 @@ impl PassiveBot {
         opts
     }
 
-    fn get_best_safe_move(&self, map: &Map, safe: &Vec<(Command, Coord)>) -> Command {
+    fn get_best_safe_move(&self, map: &Map, safe: &[(Command, Coord)]) -> Command {
         let center_row = map.height / 2;
         let center_col = map.width / 2;
 
@@ -97,6 +105,6 @@ impl Bot for PassiveBot {
         }
 
         // (3) Else, wait.
-        return Command::Wait;
+        Command::Wait
     }
 }
