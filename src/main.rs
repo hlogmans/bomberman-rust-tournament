@@ -21,7 +21,7 @@ fn main() {
     //let bot_constructors = available_bots();
     let bot_configs = [
         (1, "Bot1-Easy".to_string()),
-        (1, "Bot-Easy2".to_string()),
+        (1, "Bot2-Easy".to_string()),
         (0, "Bot3-Random".to_string()),
         (0, "Bot4-Random".to_string()),
     ];
