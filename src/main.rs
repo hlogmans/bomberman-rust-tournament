@@ -18,16 +18,6 @@ use std::time::Duration;
 
 fn main() {
     use num_cpus;
-    //let bot_constructors = available_bots();
-    let bot_configs = [
-        (1, "Bot1-Easy".to_string()),
-        (1, "Bot2-Easy".to_string()),
-        (0, "Bot3-Random".to_string()),
-        (0, "Bot4-Random".to_string()),
-        (2, "GBot-G".to_string()),
-        (3, "CuddleBot-G".to_string()),
-        (4, "PassiveBot".to_string()),
-    ];
 
     // Dynamisch aantal threads op basis van CPU cores
     let num_threads = num_cpus::get();
@@ -71,17 +61,12 @@ fn main() {
     let mut handles = Vec::new();
 
     for thread_idx in 0..num_threads {
-        let bot_configs = bot_configs.clone();
         let mut totals = BotScores::new();
         let round_counters = round_counters.clone();
         handles.push(thread::spawn(move || {
             // Geef thread index en Arc door
             let bot_constructors = available_bots();
-            let scores = run_tournament(
-                &bot_constructors,
-                &bot_configs,
-                Some((thread_idx, round_counters)),
-            );
+            let scores = run_tournament(&bot_constructors, Some((thread_idx, round_counters)));
             totals.merge_with(&scores);
             totals
         }));
@@ -108,7 +93,12 @@ fn main() {
 
     // Sort scores by number of wins in descending order
     let mut sorted_scores = grand_totals.scores.clone();
-    sorted_scores.sort_by(|a, b| b.1.wins.cmp(&a.1.wins));
+    // sort_by on the percentage of wins, compared as float
+    // null exception possible
+    sorted_scores.sort_by(|a, b| {
+        (b.1.wins as f64 / b.1.total_games as f64)
+            .total_cmp(&(a.1.wins as f64 / a.1.total_games as f64))
+    });
 
     //Print the final scores
     println!("Final Scores after {} games:", grand_totals.total_games);
