@@ -114,7 +114,7 @@ fn main() {
     println!("Final Scores after {} games:", grand_totals.total_games);
     for (bot, score) in sorted_scores {
         println!(
-            "{bot}: WinPercentage: {}% {score:?}",
+            "{bot}: WinPercentage: {:.1}% {score:?}",
             (score.wins as f64 / score.total_games as f64) * 100.0
         );
     }

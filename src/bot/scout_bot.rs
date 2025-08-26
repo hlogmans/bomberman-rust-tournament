@@ -1,16 +1,16 @@
+use crate::bot::passive_bot::PassiveBot;
 use crate::{
     bot::Bot,
     coord::Coord,
     game::map_settings::MapSettings,
     map::{Command, Map},
 };
-use crate::bot::passive_bot::PassiveBot;
 
 #[derive(Clone)]
 pub struct ScoutBot {
     pub name: String,
     pub id: usize,
-    map_settings : MapSettings,
+    map_settings: MapSettings,
     passive_bot: PassiveBot,
     command_list: Vec<Command>,
     current_index: usize,
@@ -24,7 +24,7 @@ impl ScoutBot {
             name: "ScoutBot".to_string(),
             id: 0,
             map_settings: MapSettings::default(),
-            passive_bot: PassiveBot::new("helping".to_string()),
+            passive_bot: PassiveBot::new(),
             command_list: vec![],
             current_index: 0,
             looping: false,
@@ -35,41 +35,80 @@ impl ScoutBot {
     fn hardcoded_script() -> Vec<Command> {
         vec![
             Command::Right,
-
             // bomb place and run
-            Command::PlaceBomb, Command::Left, Command::Down, Command::Wait,
-            Command::Up, Command::Right, Command::Right,
-
+            Command::PlaceBomb,
+            Command::Left,
+            Command::Down,
+            Command::Wait,
+            Command::Up,
+            Command::Right,
+            Command::Right,
             // bomb place and run
-            Command::PlaceBomb, Command::Left, Command::Left, Command::Down,
-            Command::Up, Command::Right,
-
+            Command::PlaceBomb,
+            Command::Left,
+            Command::Left,
+            Command::Down,
+            Command::Up,
+            Command::Right,
             // bomb place and run
-            Command::PlaceBomb, Command::Left, Command::Down, Command::Wait,
-            Command::Up, Command::Right, Command::Right, Command::Right, Command::Right,
-
+            Command::PlaceBomb,
+            Command::Left,
+            Command::Down,
+            Command::Wait,
+            Command::Up,
+            Command::Right,
+            Command::Right,
+            Command::Right,
+            Command::Right,
             // bomb place and run
-            Command::PlaceBomb, Command::Left, Command::Left, Command::Down,
-            Command::Up, Command::Right, Command::Right,
-
+            Command::PlaceBomb,
+            Command::Left,
+            Command::Left,
+            Command::Down,
+            Command::Up,
+            Command::Right,
+            Command::Right,
             // bomb place and run
-            Command::PlaceBomb, Command::Left, Command::Left, Command::Down,
-            Command::Up, Command::Right, Command::Right,
-
+            Command::PlaceBomb,
+            Command::Left,
+            Command::Left,
+            Command::Down,
+            Command::Up,
+            Command::Right,
+            Command::Right,
             // bomb place and run
-            Command::PlaceBomb, Command::Left, Command::Left, Command::Down,
-            Command::Up, Command::Right, Command::Right, Command::Down, Command::Down,
-
+            Command::PlaceBomb,
+            Command::Left,
+            Command::Left,
+            Command::Down,
+            Command::Up,
+            Command::Right,
+            Command::Right,
+            Command::Down,
+            Command::Down,
             // bomb place and run
-            Command::PlaceBomb, Command::Up, Command::Up, Command::Left,
-            Command::Right, Command::Down, Command::Down, Command::Down, Command::Down,
-
+            Command::PlaceBomb,
+            Command::Up,
+            Command::Up,
+            Command::Left,
+            Command::Right,
+            Command::Down,
+            Command::Down,
+            Command::Down,
+            Command::Down,
             // bomb place and run
-            Command::PlaceBomb, Command::Up, Command::Up, Command::Right,
-            Command::Left, Command::Down, Command::Down,
-
+            Command::PlaceBomb,
+            Command::Up,
+            Command::Up,
+            Command::Right,
+            Command::Left,
+            Command::Down,
+            Command::Down,
             // bomb place and run
-            Command::PlaceBomb, Command::Up, Command::Up, Command::Left,
+            Command::PlaceBomb,
+            Command::Up,
+            Command::Up,
+            Command::Left,
         ]
     }
 
@@ -77,7 +116,8 @@ impl ScoutBot {
         if loc.row.get() < height as usize / 2 {
             ScoutBot::hardcoded_script()
         } else {
-           ScoutBot::hardcoded_script().into_iter()
+            ScoutBot::hardcoded_script()
+                .into_iter()
                 .map(|c| match c {
                     Command::Up => Command::Down,
                     Command::Down => Command::Up,
