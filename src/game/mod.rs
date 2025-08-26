@@ -2,8 +2,8 @@ pub mod game_progress;
 pub mod gameresult;
 pub mod map_settings;
 
-use rand::seq::SliceRandom;
 use crate::map::CellType;
+use rand::seq::SliceRandom;
 
 use crate::{
     bot::Bot,
@@ -67,15 +67,14 @@ impl Game {
             playernames: Vec::new(),
         };
 
-
         let map = Map::create(
             width,
             height,
             players.iter().map(|bot| bot.name().to_string()).collect(),
-            map_settings.clone()
+            map_settings.clone(),
         );
 
-        let endgame = map_settings.endgame;
+        //let endgame = map_settings.endgame;
 
         Game {
             map,
@@ -104,7 +103,6 @@ impl Game {
     pub fn run(&mut self) -> GameResult {
         while self.winner.is_none() {
             self.run_round(None, None, None);
-            
         }
         GameResult::build(self)
     } // loop until a winner is set
@@ -172,9 +170,11 @@ impl Game {
 
         // reduce map size if needed
         if self.map.map_settings.endgame <= self.turn {
-            if let Some(shrink_location) =
-                calculate_shrink_location(self.turn - self.map.map_settings.endgame, self.map.map_settings.width, self.map.map_settings.height)
-            {
+            if let Some(shrink_location) = calculate_shrink_location(
+                self.turn - self.map.map_settings.endgame,
+                self.map.map_settings.width,
+                self.map.map_settings.height,
+            ) {
                 // set map location to wall
                 self.map.set_wall(shrink_location);
 
@@ -248,16 +248,15 @@ impl Game {
             |c: Coord| c.move_left(),
             |c: Coord| c.move_right(),
         ];
-        
+
         // Iterate over each direction and extend the explosion
         for direction in directions.iter() {
             let mut current_loc = Some(location);
             for _ in 1..=self.map.map_settings.bombradius {
                 current_loc = current_loc.and_then(|l| direction(l));
-                
+
                 if let Some(loc) = current_loc {
                     let cell_type = self.map.cell_type(loc);
-                    
 
                     match cell_type {
                         // A wall stops the explosion completely in this direction.
@@ -345,7 +344,12 @@ mod tests {
 
     fn setup_game(width: usize, height: usize) -> Game {
         Game {
-            map: Map::create(width, height, vec!["A".to_string(), "B".to_string()], MapSettings::default()),
+            map: Map::create(
+                width,
+                height,
+                vec!["A".to_string(), "B".to_string()],
+                MapSettings::default(),
+            ),
             bots: vec![],
             player_count: 2,
             turn: 0,
@@ -366,10 +370,9 @@ mod tests {
         game.map.clear_destructable(Coord::from(4, 3)); // down
         game.map.clear_destructable(Coord::from(3, 2)); // left
         game.map.clear_destructable(Coord::from(3, 4)); // right
-        
 
         let result = game.bomb_explosion_locations(loc);
-        
+
         let expected = vec![
             Coord::from(3, 3), // center
             Coord::from(2, 3),
@@ -381,7 +384,7 @@ mod tests {
             Coord::from(5, 3),
             Coord::from(3, 5), // right
         ];
-        
+
         assert_eq!(result.len(), expected.len());
 
         for coord in expected {

@@ -3,7 +3,6 @@ pub mod cell;
 pub mod display;
 pub mod player;
 
-use std::cell::Cell;
 pub use bomb::*;
 pub use cell::*;
 pub use display::*;
@@ -27,7 +26,12 @@ pub struct Map {
 }
 
 impl Map {
-    pub fn create(width: usize, height: usize, playernames: Vec<String>, map_settings: MapSettings) -> Self {
+    pub fn create(
+        width: usize,
+        height: usize,
+        playernames: Vec<String>,
+        map_settings: MapSettings,
+    ) -> Self {
         // at least 2 players, at most 4 players
         if playernames.len() < 2 || playernames.len() > 4 {
             panic!("Invalid number of players: must be between 2 and 4");
@@ -173,7 +177,7 @@ impl Map {
         }
         // Add a bomb at the given position with the map_settings bomb timer
         let timer = self.map_settings.bombtimer;
-        self.bombs.push(Bomb { position,  timer});
+        self.bombs.push(Bomb { position, timer });
     }
 
     /// Get the next bomb to explode from the list, if any. Use this method because processing the
@@ -255,10 +259,9 @@ impl Map {
                 }
 
                 new_position(player_position, &command).map(|c| {
-
                     self.set_cell(c, CellType::Player);
                     self.set_player_position(player, c);
-                };
+                });
             }
         }
 
@@ -286,7 +289,7 @@ impl Map {
 /// - the outer line is walled
 /// - the line within the outer wall is destructable
 /// - every even row, and every even column contains a wall
-/// 
+///
 ///  WWWWWWW line 0
 ///  W.....W
 ///  W.W.W.W line 2
@@ -354,9 +357,7 @@ fn new_position(current_position: Coord, command: &Command) -> Option<Coord> {
             current_position.move_right() // Move right, ensuring it doesn't go out of bounds
         }
         // wait or bomb is no-move
-        Command::Wait | Command::PlaceBomb => {
-            Some(current_position)
-        }
+        Command::Wait | Command::PlaceBomb => Some(current_position),
     }
 }
 

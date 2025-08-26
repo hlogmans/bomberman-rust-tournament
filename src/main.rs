@@ -18,7 +18,7 @@ use std::time::Duration;
 
 fn main() {
     use num_cpus;
-    let bot_constructors = available_bots();
+    //let bot_constructors = available_bots();
     let bot_configs = [
         (1, "Bot1-Easy".to_string()),
         (1, "Bot-Easy2".to_string()),
