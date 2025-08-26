@@ -4,7 +4,7 @@ use crate::{
     bot::Bot,
     coord::Coord,
     game::map_settings::MapSettings,
-    map::{Map, Command},
+    map::{Command, Map},
 };
 
 pub struct CuddleBot {
@@ -14,27 +14,32 @@ pub struct CuddleBot {
 }
 
 impl CuddleBot {
-    pub fn new(name: String) -> Self {
-        CuddleBot { name, id: 0, map_settings: MapSettings::default() }
+    pub fn new() -> Self {
+        CuddleBot {
+            name: "CuddleBot".to_string(),
+            id: 0,
+            map_settings: MapSettings::default(),
+        }
     }
 
     fn safe_moves(&self, map: &Map, me: Coord) -> Vec<Command> {
         let mut opts = Vec::new();
 
         for &(command, neighbor_field) in &[
-            (Command::Up,    me.move_up()),
-            (Command::Down,  me.move_down()),
-            (Command::Left,  me.move_left()),
+            (Command::Up, me.move_up()),
+            (Command::Down, me.move_down()),
+            (Command::Left, me.move_left()),
             (Command::Right, me.move_right()),
-            (Command::Wait,  Some(me)),
+            (Command::Wait, Some(me)),
         ] {
-            let idx = neighbor_field.unwrap().row.get() * map.width + neighbor_field.unwrap().col.get();
+            let idx =
+                neighbor_field.unwrap().row.get() * map.width + neighbor_field.unwrap().col.get();
             if map.grid[idx] == ' ' && !self.is_danger(map, neighbor_field.unwrap()) {
                 opts.push(command);
             }
         }
 
-        return opts
+        return opts;
     }
 
     fn is_a_bot_near(&self, map: &Map, me: Coord) -> bool {
@@ -45,64 +50,71 @@ impl CuddleBot {
             (me.move_right()),
             (Some(me)),
         ] {
-            let idx = neighbor_field.unwrap().row.get() * map.width + neighbor_field.unwrap().col.get();
+            let idx =
+                neighbor_field.unwrap().row.get() * map.width + neighbor_field.unwrap().col.get();
             if map.grid[idx] == 'p' {
                 return true;
             }
         }
 
-        return false
+        return false;
     }
 
     fn is_danger(&self, map: &Map, locaction: Coord) -> bool {
-        map.bombs.iter()
-            .any(|bomb| {                
-                let same_row = bomb.position.row.get() == locaction.row.get();
-                let same_col = bomb.position.col.get() == locaction.col.get();
-                let row_dist = (bomb.position.row.get() as i32 - locaction.row.get() as i32).abs() as usize;
-                let col_dist = (bomb.position.col.get() as i32 - locaction.col.get() as i32).abs() as usize;
+        map.bombs.iter().any(|bomb| {
+            let same_row = bomb.position.row.get() == locaction.row.get();
+            let same_col = bomb.position.col.get() == locaction.col.get();
+            let row_dist =
+                (bomb.position.row.get() as i32 - locaction.row.get() as i32).abs() as usize;
+            let col_dist =
+                (bomb.position.col.get() as i32 - locaction.col.get() as i32).abs() as usize;
 
-                (same_row && col_dist <= self.map_settings.bombradius + 5) || (same_col && row_dist <= self.map_settings.bombradius + 5)
-            })
+            (same_row && col_dist <= self.map_settings.bombradius + 5)
+                || (same_col && row_dist <= self.map_settings.bombradius + 5)
+        })
     }
 
     fn go_to_player(&self, map: &Map, me: Coord) -> Vec<Command> {
         let mut opts = Vec::new();
 
         for &(command, neighbor_field) in &[
-            (Command::Up,    me.move_up()),
-            (Command::Down,  me.move_down()),
-            (Command::Left,  me.move_left()),
+            (Command::Up, me.move_up()),
+            (Command::Down, me.move_down()),
+            (Command::Left, me.move_left()),
             (Command::Right, me.move_right()),
-            (Command::Wait,  Some(me)),
+            (Command::Wait, Some(me)),
         ] {
-            let idx = neighbor_field.unwrap().row.get() * map.width + neighbor_field.unwrap().col.get();
+            let idx =
+                neighbor_field.unwrap().row.get() * map.width + neighbor_field.unwrap().col.get();
             if map.grid[idx] == ' ' && self.is_player_this_direction(map, neighbor_field.unwrap()) {
                 opts.push(command);
             }
         }
 
-        return opts
+        return opts;
     }
 
     fn is_player_this_direction(&self, map: &Map, locaction: Coord) -> bool {
-        map.players.iter()
+        map.players
+            .iter()
             .filter(|player| player.name != "CuddleBot-G (0)")
             .any(|player| {
                 let same_row = player.position.row.get() == locaction.row.get();
                 let same_col = player.position.col.get() == locaction.col.get();
-                let row_dist = (player.position.row.get() as i32 - locaction.row.get() as i32).abs() as usize;
-                let col_dist = (player.position.col.get() as i32 - locaction.col.get() as i32).abs() as usize;
-                (same_row && col_dist >= self.map_settings.bombradius) || (same_col && row_dist >= self.map_settings.bombradius)
+                let row_dist =
+                    (player.position.row.get() as i32 - locaction.row.get() as i32).abs() as usize;
+                let col_dist =
+                    (player.position.col.get() as i32 - locaction.col.get() as i32).abs() as usize;
+                (same_row && col_dist >= self.map_settings.bombradius)
+                    || (same_col && row_dist >= self.map_settings.bombradius)
             })
     }
 
     fn is_other_player_gerhard(&self, map: &Map) -> bool {
-        map.players.iter()
+        map.players
+            .iter()
             .filter(|player| player.name == "GBot-G (0)")
-            .any(|_player| {
-                true
-            })
+            .any(|_player| true)
     }
 }
 
@@ -119,12 +131,12 @@ impl Bot for CuddleBot {
 
     fn get_move(&mut self, map: &Map, me: Coord) -> Command {
         if self.is_other_player_gerhard(map) {
-            return Command::PlaceBomb
+            return Command::PlaceBomb;
         }
 
         // Flee
         let safe = self.safe_moves(map, me);
-        
+
         if !safe.is_empty() {
             let mut random = rand::rng();
             return *safe.get(random.random_range(0..safe.len())).unwrap();
@@ -139,7 +151,7 @@ impl Bot for CuddleBot {
 
         // Protect
         if self.is_a_bot_near(map, me) {
-            return Command::PlaceBomb
+            return Command::PlaceBomb;
         }
 
         // Drink beer
