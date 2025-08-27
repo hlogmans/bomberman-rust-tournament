@@ -26,9 +26,9 @@ pub fn decide(input: FuzzyInput) -> Intent {
 
     let mut intent = Intent::Wait;
 
-    if danger > 0.7 {
+    if danger > 0.6 {
         intent = Intent::Flee;
-    } else if close > 0.9 {
+    } else if close > 0.7 {
         intent = Intent::PlaceBomb
     } else {
         intent = Intent::Move
@@ -52,19 +52,4 @@ pub fn handle_intent(intent: Intent, input: FuzzyInput) -> Command {
     Command::Wait
 }
 
-fn determine_distance_to_closest_enemy(map: &Map, bot_name: String, bot_id: usize, my_position: Coord) -> i32 {
-    let mut closest = 999999;
-    let name = (bot_name + " (" + &bot_id.to_string() + ")").to_string();
 
-    for player in &map.players {
-        if player.name != name {
-            let distance_to_player = manhattan(my_position, player.position);
-
-            if distance_to_player < closest {
-                closest = distance_to_player;
-            }
-        }
-    }
-
-    closest
-}

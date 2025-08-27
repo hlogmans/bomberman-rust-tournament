@@ -35,7 +35,7 @@ fn main() {
     // Bots zijn al vers, geen clone nodig
     let gameresult = game::Game::build(11, 11, game_bots).run();
     // in tournament mode, only the winner is tracked, the other players get a loss
-
+    println!("winnaar: {}", gameresult.winner)
 
     // Dynamisch aantal threads op basis van CPU cores
     // let num_threads = num_cpus::get();
