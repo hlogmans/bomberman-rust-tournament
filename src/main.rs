@@ -20,15 +20,24 @@ use crate::bot::Bot;
 fn main() {
     use num_cpus;
 
+    // let bot_constructors = available_bots();
+    // let bot1 = bot_constructors[4]();
+    // let bot2 = bot_constructors[6]();
+    // 
+    // let game_bots: Vec<Box<dyn Bot>> = vec![bot1, bot2];
+    // let gameresult = game::Game::build(11, 11, game_bots).run();
+    // 
+    // println!("{}", gameresult.winner);
+
     // Dynamisch aantal threads op basis van CPU cores
     let num_threads = num_cpus::get();
     println!("Aantal nuttige threads: {num_threads}");
-
+    
     let start_time = std::time::Instant::now();
-
+    
     // Shared round counters for each thread
     let round_counters = Arc::new(Mutex::new(vec![0; num_threads]));
-
+    
     // Status thread: print every 250ms
     let status_counters = round_counters.clone();
     let status_handle = thread::spawn(move || {
@@ -49,7 +58,7 @@ fn main() {
             print!("Total: {total}, Speed: {speed:.1}K rounds/s\r");
             use std::io::{Write, stdout};
             stdout().flush().unwrap();
-
+    
             // Stop condition: if all threads are done (negative value as marker)
             if counters.iter().all(|&c| c == usize::MAX) {
                 break;
@@ -57,10 +66,10 @@ fn main() {
         }
         println!(); // Move to next line after finishing
     });
-
+    
     // Start threads, elke thread maakt zijn eigen bots aan
     let mut handles = Vec::new();
-
+    
     for thread_idx in 0..num_threads {
         let mut totals = BotScores::new();
         let round_counters = round_counters.clone();
@@ -76,7 +85,7 @@ fn main() {
     for handle in handles {
         grand_totals.merge_with(&handle.join().unwrap());
     }
-
+    
     // Mark all threads as done for status thread
     {
         let mut counters = round_counters.lock().unwrap();
@@ -85,13 +94,13 @@ fn main() {
         }
     }
     status_handle.join().unwrap();
-
+    
     //Print the final scores
     /*println!("Final Scores after {} games:", grand_totals.total_games);
     for (bot, score) in grand_totals.scores {
         println!("{}: {:?}", bot, score);
     }*/
-
+    
     // Sort scores by number of wins in descending order
     let mut sorted_scores = grand_totals.scores.clone();
     // sort_by on the percentage of wins, compared as float
@@ -100,7 +109,7 @@ fn main() {
         (b.1.wins as f64 / b.1.total_games as f64)
             .total_cmp(&(a.1.wins as f64 / a.1.total_games as f64))
     });
-
+    
     //Print the final scores
     println!("Final Scores after {} games:", grand_totals.total_games);
     for (bot, score) in sorted_scores {

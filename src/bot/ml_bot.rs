@@ -24,9 +24,9 @@ pub struct MartijnBot {
 }
 
 impl MartijnBot {
-    pub fn new(name: String) -> Self {
+    pub fn new() -> Self {
         MartijnBot {
-            name,
+            name: "Martijn".to_string(),
             id: 0,
             map_settings: MapSettings::default(),
         }
@@ -95,7 +95,6 @@ impl MartijnBot {
                 }
             }
         }
-        self.normalize_vec(&mut heatmap);
 
         heatmap
     }
@@ -145,9 +144,8 @@ impl MartijnBot {
         let mut visited = vec![false; bomb_heatmap.len()];
         let mut queue = VecDeque::new();
 
-        // Allow starting tile to count as safe
         let start_idx = self.idx(start.row.get(), start.col.get());
-        if bomb_heatmap[start_idx] < 1.0 {
+        if bomb_heatmap[start_idx] == 0.0 {
             return Some((Command::Wait, 0));
         }
 
@@ -161,7 +159,7 @@ impl MartijnBot {
         while let Some(node) = queue.pop_front() {
             let idx = self.idx(node.pos.row.get(), node.pos.col.get());
 
-            if bomb_heatmap[idx] < 1.0 {
+            if bomb_heatmap[idx] == 0.0 {
                 return node.first_move.map(|dir| (dir, node.time));
             }
 
@@ -270,7 +268,7 @@ impl MartijnBot {
         let current_index = self.idx(_player_location.row.get(), _player_location.col.get());
         let escape_path: Option<(Command,usize)> = self.find_escape_path(map, _player_location, &bomb_heatmap);
 
-        if bomb_heatmap[current_index] > 0.5 {
+        if bomb_heatmap[current_index] > 0.0 {
             return if let Some((direction, _steps)) = escape_path {
                 direction
             } else {
@@ -383,7 +381,6 @@ impl Bot for MartijnBot {
 
     fn get_move(&mut self, map: &Map, _player_location: Coord) -> Command {
         let next_move = self.decide_move(map, _player_location);
-        //println!("{next_move:? }");
         next_move
 
     }
