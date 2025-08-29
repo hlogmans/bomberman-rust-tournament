@@ -2,6 +2,7 @@ use crate::game::Game;
 use crate::game::map_settings::MapSettings;
 use crate::map::Command;
 
+/// Represents the result of a game.
 pub struct GameResult {
     pub winner: String,
     pub replay_data: Vec<Command>,
@@ -17,10 +18,7 @@ impl GameResult {
 
         GameResult {
             winner,
-            replay_data: replay_data
-                .iter()
-                .map(|command| command.1)
-                .collect(),
+            replay_data: replay_data.iter().map(|command| command.1).collect(),
             game_settings,
             rounds: game.turn,
         }
