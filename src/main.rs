@@ -30,13 +30,13 @@ fn main() {
     let game_bots: Vec<Box<dyn Bot>> = vec![bot1, bot2];
     let gameresult = game::Game::build(11, 11, game_bots).run();
 
+    println!("{}", gameresult.winner)
 
 
 
-
-
-
-    // Dynamisch aantal threads op basis van CPU cores
+    //
+    //
+    // // Dynamisch aantal threads op basis van CPU cores
     // let num_threads = num_cpus::get();
     // println!("Aantal nuttige threads: {}", num_threads);
     //

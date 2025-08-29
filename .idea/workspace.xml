@@ -12,11 +12,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4ca1fcc4-12aa-46ba-8ad4-78a7166cd61c" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/bot/ml_bot.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/bot/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/bot/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/bot/ml_bot.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/bot/ml_bot.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/game/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/map/display.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/map/display.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -54,6 +53,10 @@
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+<<<<<<< Updated upstream
+=======
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+>>>>>>> Stashed changes
     &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;
   }
 }</component>
@@ -82,5 +85,16 @@
   </component>
   <component name="TaskManager">
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
 </project>
