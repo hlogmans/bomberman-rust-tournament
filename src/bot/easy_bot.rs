@@ -40,14 +40,14 @@ impl Bot for EasyBot {
         // Randomly choose a command for the bot, there is no specific strategy
         use rand::Rng;
         let mut rng = rand::rng();
-        let commands = vec![
+        let commands = [
             Command::Up,
             Command::Down,
             Command::Left,
             Command::Right,
             Command::Wait,
         ];
-        commands[rng.random_range(0..commands.len())].clone()
+        commands[rng.random_range(0..commands.len())]
     }
 
     fn start_game(&mut self, map_settings: &MapSettings, bot_id: usize) -> bool {
@@ -59,7 +59,7 @@ impl Bot for EasyBot {
 
 impl Coord {
     fn in_bomb_range(&self, bomb: &Coord, radius: u32) -> bool {
-        if let Some(distance) = self.distance(&bomb) {
+        if let Some(distance) = self.distance(bomb) {
             distance <= radius
         } else {
             false
@@ -80,10 +80,16 @@ impl Coord {
     }
 }
 
+impl Default for EasyBot {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EasyBot {
-    pub fn new(name: String) -> Self {
+    pub fn new() -> Self {
         EasyBot {
-            name,
+            name: "EasyBot".to_string(),
             id: 0,
             nextmoves: Vec::new(),
             map_settings: MapSettings::default(),
@@ -93,9 +99,9 @@ impl EasyBot {
     fn safe_to_bomb(&self, map: &Map, loc: Coord) -> Option<Vec<Command>> {
         // it is safe to bomb if there is an open space next to this position, and there is an open space lateral to that
         // position. So there are 8 options: up-left, up-right, down-left, down-right, left-up, left-down, right-up, right-down
-        let vertical = vec![Command::Up, Command::Down];
-        let horizontal = vec![Command::Left, Command::Right];
-        let options = vec![
+        let vertical = [Command::Up, Command::Down];
+        let horizontal = [Command::Left, Command::Right];
+        let options = [
             (vertical[0], horizontal[0]),
             (vertical[0], horizontal[1]),
             (vertical[1], horizontal[0]),
@@ -107,8 +113,8 @@ impl EasyBot {
         ];
 
         for (m1, m2) in options {
-            if let Some(loc1) = loc.move_command(m1) {
-                if let Some(loc2) = loc1.move_command(m2) {
+            if let Some(loc1) = loc.move_command(m1)
+                && let Some(loc2) = loc1.move_command(m2) {
                     // if both locations are empty, then we can bomb there
                     if self.get_cell(map, loc1) == ' ' && self.get_cell(map, loc2) == ' ' {
                         return Some(vec![
@@ -120,7 +126,6 @@ impl EasyBot {
                         ]);
                     }
                 }
-            }
         }
         None
     }
@@ -138,10 +143,9 @@ impl EasyBot {
 
     /// get a cell, returns a wall if invalid
     fn get_cell(&self, map: &Map, location: Coord) -> char {
-        return map
+            *map
             .grid
             .get(location.row.get() * map.width + location.col.get())
             .unwrap_or(&'W')
-            .clone();
     }
 }
