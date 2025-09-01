@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+
 use crate::{
     bot::available_bots,
     tournament::{BotScores, run_tournament},
@@ -17,18 +18,10 @@ use std::time::Duration;
 
 fn main() {
     use num_cpus;
-    let bot_constructors = available_bots();
-    let bot_configs = vec![
-        (1, "Bot1-Easy".to_string()),
-        (1, "Bot-Easy2".to_string()),
-        (0, "Bot3-Random".to_string()),
-        (0, "Bot4-Random".to_string()),
-        (2, "IAmTheDanger".to_string()),
-    ];
 
     // Dynamisch aantal threads op basis van CPU cores
     let num_threads = num_cpus::get();
-    println!("Aantal nuttige threads: {}", num_threads);
+    println!("Aantal nuttige threads: {num_threads}");
 
     let start_time = std::time::Instant::now();
 
@@ -43,7 +36,7 @@ fn main() {
             let counters = status_counters.lock().unwrap();
             //let line = String::from("Thread rounds: ");
             let mut total = 0;
-            for (_i, count) in counters.iter().enumerate() {
+            for count in counters.iter() {
                 // Pad to 6 digits for alignment
                 //line.push_str(&format!("T{}:{:6} ", i, count));
                 if *count != usize::MAX {
@@ -52,9 +45,10 @@ fn main() {
             }
             let speed = total as f64 / start_time.elapsed().as_secs_f64() / 1000.0;
             // Carriage return + flush to overwrite line
-            print!("Total: {}, Speed: {:.1}K rounds/s\r", total, speed);
+            print!("Total: {total}, Speed: {speed:.1}K rounds/s\r");
             use std::io::{Write, stdout};
             stdout().flush().unwrap();
+
             // Stop condition: if all threads are done (negative value as marker)
             if counters.iter().all(|&c| c == usize::MAX) {
                 break;
@@ -67,17 +61,12 @@ fn main() {
     let mut handles = Vec::new();
 
     for thread_idx in 0..num_threads {
-        let bot_constructors = bot_constructors.clone();
-        let bot_configs = bot_configs.clone();
         let mut totals = BotScores::new();
         let round_counters = round_counters.clone();
         handles.push(thread::spawn(move || {
             // Geef thread index en Arc door
-            let scores = run_tournament(
-                &bot_constructors,
-                &bot_configs,
-                Some((thread_idx, round_counters)),
-            );
+            let bot_constructors = available_bots();
+            let scores = run_tournament(&bot_constructors, Some((thread_idx, round_counters)));
             totals.merge_with(&scores);
             totals
         }));
@@ -97,8 +86,26 @@ fn main() {
     status_handle.join().unwrap();
 
     //Print the final scores
-    println!("Final Scores after {} games:", grand_totals.total_games);
+    /*println!("Final Scores after {} games:", grand_totals.total_games);
     for (bot, score) in grand_totals.scores {
         println!("{}: {:?}", bot, score);
+    }*/
+
+    // Sort scores by number of wins in descending order
+    let mut sorted_scores = grand_totals.scores.clone();
+    // sort_by on the percentage of wins, compared as float
+    // null exception possible
+    sorted_scores.sort_by(|a, b| {
+        (b.1.wins as f64 / b.1.total_games as f64)
+            .total_cmp(&(a.1.wins as f64 / a.1.total_games as f64))
+    });
+
+    //Print the final scores
+    println!("Final Scores after {} games:", grand_totals.total_games);
+    for (bot, score) in sorted_scores {
+        println!(
+            "{bot}: WinPercentage: {:.1}% {score:?}",
+            (score.wins as f64 / score.total_games as f64) * 100.0
+        );
     }
 }

@@ -2,6 +2,7 @@ pub mod game_progress;
 pub mod gameresult;
 pub mod map_settings;
 
+use crate::map::CellType;
 use rand::seq::SliceRandom;
 
 use crate::{
@@ -13,8 +14,6 @@ use crate::{
 };
 
 pub struct Game {
-    map_settings: MapSettings,
-
     map: Map,
 
     bots: Vec<Box<dyn Bot>>,
@@ -26,9 +25,6 @@ pub struct Game {
     // map turn. Every player sets a cmmmand for the current turn.
     turn: usize,
 
-    // at which turn
-    shrink_at_turn: usize,
-
     // history of handles player actions, it is deterministic, so it can be replayed.
     player_actions: Vec<(usize, Command)>,
 
@@ -38,11 +34,6 @@ pub struct Game {
     // this is the list of active players that can do a move. The game is won if only one is alive.
     // at start the list is randomized.
     alive_players: Vec<usize>,
-
-    bomb_range: usize,
-
-    width: usize,
-    height: usize,
 }
 
 impl Game {
@@ -66,13 +57,9 @@ impl Game {
 
     fn new(width: usize, height: usize, players: Vec<Box<dyn Bot>>) -> Self {
         let player_count = players.len();
-        let map = Map::create(
-            width,
-            height,
-            players.iter().map(|bot| bot.name().to_string()).collect(),
-        );
+
         let map_settings = MapSettings {
-            bombtimer: 100,
+            bombtimer: 4,
             bombradius: 3,
             endgame: 500,
             width,
@@ -80,22 +67,24 @@ impl Game {
             playernames: Vec::new(),
         };
 
-        let endgame = map_settings.endgame.clone();
+        let map = Map::create(
+            width,
+            height,
+            players.iter().map(|bot| bot.name().to_string()).collect(),
+            map_settings.clone(),
+        );
+
+        //let endgame = map_settings.endgame;
 
         Game {
-            map_settings,
             map,
             bots: players,
-            player_count: player_count,
+            player_count,
             turn: 0,
-            shrink_at_turn: endgame,
             player_actions: Vec::new(),
             winner: None,
             // initialize alive player and shuffle them
             alive_players: Vec::new(),
-            bomb_range: 3, // Default bomb range, can be adjusted as needed
-            width: width,
-            height: height,
             display: Box::new(ConsoleDisplay),
         }
     }
@@ -107,7 +96,7 @@ impl Game {
 
         // call start_game for each bot
         for (i, bot) in self.bots.iter_mut().enumerate() {
-            bot.start_game(&self.map_settings, i);
+            bot.start_game(&self.map.map_settings, i);
         }
     }
 
@@ -153,7 +142,7 @@ impl Game {
                 .bots
                 .get_mut(player_index)
                 .expect("Bot not found for player index");
-            let loc = self.map.get_player(player_index).unwrap().position.clone();
+            let loc = self.map.get_player(player_index).unwrap().position;
 
             // if the game is a replay, take the move from the Vec
             let bot_move;
@@ -180,10 +169,12 @@ impl Game {
         }
 
         // reduce map size if needed
-        if self.shrink_at_turn < self.turn {
-            if let Some(shrink_location) =
-                calculate_shrink_location(self.turn - self.shrink_at_turn, self.width, self.height)
-            {
+        if self.map.map_settings.endgame <= self.turn {
+            if let Some(shrink_location) = calculate_shrink_location(
+                self.turn - self.map.map_settings.endgame,
+                self.map.map_settings.width,
+                self.map.map_settings.height,
+            ) {
                 // set map location to wall
                 self.map.set_wall(shrink_location);
 
@@ -195,8 +186,7 @@ impl Game {
                         && let Some(cb) = logging_callback
                     {
                         cb(format!(
-                            "Player {} has been removed from the game due to shrinking at location {:?}",
-                            player_name, shrink_location
+                            "Player {player_name} has been removed from the game due to shrinking at location {shrink_location:?}"
                         ));
                     }
 
@@ -224,12 +214,12 @@ impl Game {
         if let Some(callback) = progress_callback {
             let progress = GameProgress {
                 turn: self.turn,
-                endgame_started: self.turn >= self.shrink_at_turn,
+                endgame_started: self.turn >= self.map.map_settings.endgame,
             };
             callback(&progress);
         }
 
-        return false;
+        false
     }
 
     /// Check if there is a winner after each round
@@ -239,7 +229,7 @@ impl Game {
         let alive_count = self.alive_players.len();
         if alive_count == 1 {
             // Set the winner to the index of the last remaining player
-            self.winner = self.alive_players.first().map(|x| x.clone()); // Assuming the first player in alive_players is the winner
+            self.winner = self.alive_players.first().copied(); // Assuming the first player in alive_players is the winner
             return true;
         } else if alive_count == 0 {
             // If no players are left, set winner to None or handle as needed
@@ -250,35 +240,44 @@ impl Game {
     }
 
     fn bomb_explosion_locations(&self, location: Coord) -> Vec<Coord> {
-        // This function returns the locations that will be affected by a bomb explosion at the given location.
-        // It returns the center and all 4 directions (up, down, left, right) within the bomb range.
-
-        // to make it deterministic, the explosion is done in a specific order. From center to outer, then starting on the
-        // left side and going to the right side clockwise
-
-        // XXX XXX
-        // XXX7XXX
-        // XXX3XXX
-        //  62148
-        // XXX5XXX
-        // XXX9XXX
-        // XXX XXX
         let mut locations = vec![location];
-        let loc = Some(location);
-        let mut left = loc;
-        let mut right = loc;
-        let mut up = loc;
-        let mut down = loc;
 
-        for _ in 1..=self.bomb_range {
-            left = left.and_then(|l| l.move_left());
-            right = right.and_then(|l| l.move_right());
-            up = up.and_then(|l| l.move_up());
-            down = down.and_then(|l| l.move_down());
-            locations.extend(left);
-            locations.extend(up);
-            locations.extend(right);
-            locations.extend(down);
+        let directions = [
+            |c: Coord| c.move_up(),
+            |c: Coord| c.move_down(),
+            |c: Coord| c.move_left(),
+            |c: Coord| c.move_right(),
+        ];
+
+        // Iterate over each direction and extend the explosion
+        for direction in directions.iter() {
+            let mut current_loc = Some(location);
+            for _ in 1..=self.map.map_settings.bombradius {
+                current_loc = current_loc.and_then(direction);
+
+                if let Some(loc) = current_loc {
+                    let cell_type = self.map.cell_type(loc);
+
+                    match cell_type {
+                        // A wall stops the explosion completely in this direction.
+                        CellType::Wall => {
+                            break;
+                        }
+                        // A destructible block stops the explosion, but is still destroyed.
+                        // So we add its location and then stop.
+                        CellType::Destroyable => {
+                            locations.push(loc);
+                            break;
+                        }
+                        // Empty space, a player, or a bomb will be affected, and the explosion continues.
+                        _ => {
+                            locations.push(loc);
+                        }
+                    }
+                } else {
+                    break;
+                }
+            }
         }
 
         locations
@@ -343,29 +342,37 @@ impl Game {
 mod tests {
     use super::*;
 
-    fn setup_game(width: usize, height: usize, bomb_range: usize) -> Game {
+    fn setup_game(width: usize, height: usize) -> Game {
         Game {
-            map_settings: MapSettings::default(),
-            map: Map::create(width, height, vec!["A".to_string(), "B".to_string()]),
+            map: Map::create(
+                width,
+                height,
+                vec!["A".to_string(), "B".to_string()],
+                MapSettings::default(),
+            ),
             bots: vec![],
             player_count: 2,
             turn: 0,
-            shrink_at_turn: 500,
             player_actions: vec![],
             winner: None,
             alive_players: vec![],
-            bomb_range,
-            width,
-            height,
             display: Box::new(ConsoleDisplay),
         }
     }
 
     #[test]
-    fn test_bomb_explosion_center() {
-        let game = setup_game(7, 7, 2);
+    fn test_bomb_explosion_center_clear_path() {
+        let mut game = setup_game(7, 7);
         let loc = Coord::from(3, 3);
+
+        game.map.clear_destructable(Coord::from(3, 3));
+        game.map.clear_destructable(Coord::from(2, 3)); // up
+        game.map.clear_destructable(Coord::from(4, 3)); // down
+        game.map.clear_destructable(Coord::from(3, 2)); // left
+        game.map.clear_destructable(Coord::from(3, 4)); // right
+
         let result = game.bomb_explosion_locations(loc);
+
         let expected = vec![
             Coord::from(3, 3), // center
             Coord::from(2, 3),
@@ -377,49 +384,57 @@ mod tests {
             Coord::from(5, 3),
             Coord::from(3, 5), // right
         ];
-        assert_eq!(result, expected);
+
+        assert_eq!(result.len(), expected.len());
+
+        for coord in expected {
+            assert_eq!(result.contains(&coord), true);
+        }
     }
 
     #[test]
     fn test_bomb_explosion_corner() {
-        let game = setup_game(5, 5, 2);
-        let loc = Coord::from(0, 0);
+        let game = setup_game(5, 5);
+
+        let loc = Coord::from(1, 1);
         let result = game.bomb_explosion_locations(loc);
         let expected = vec![
-            Coord::from(0, 0),
-            Coord::from(1, 0),
-            Coord::from(0, 1),
-            Coord::from(2, 0),
-            Coord::from(0, 2),
+            Coord::from(1, 1),
+            Coord::from(1, 2),
+            Coord::from(1, 3),
+            Coord::from(2, 1),
+            Coord::from(3, 1),
         ];
         assert_eq!(result, expected);
     }
 
     #[test]
-    fn test_bomb_explosion_edge() {
-        let game = setup_game(5, 5, 1);
-        let loc = Coord::from(0, 2);
+    fn test_bomb_explosion_corner_with_destructable() {
+        let game = setup_game(5, 5);
+        let loc = Coord::from(3, 3);
+
         let result = game.bomb_explosion_locations(loc);
         let expected = vec![
-            Coord::from(0, 2),
-            Coord::from(0, 1),
-            Coord::from(1, 2),
-            Coord::from(0, 3),
+            Coord::from(3, 3),
+            Coord::from(3, 2),
+            //Coord::from(3, 1), Can't be destroyed there is a destrutable in the way at 3,2
+            Coord::from(2, 3),
+            Coord::from(1, 3),
         ];
         assert_eq!(result, expected);
     }
 
     #[test]
     fn test_bomb_explosion_range_1() {
-        let game = setup_game(5, 5, 1);
+        let game = setup_game(5, 5);
         let loc = Coord::from(2, 2);
         let result = game.bomb_explosion_locations(loc);
         let expected = vec![
             Coord::from(2, 2),
-            Coord::from(1, 2),
             Coord::from(2, 1),
-            Coord::from(3, 2),
             Coord::from(2, 3),
+            Coord::from(1, 2),
+            Coord::from(3, 2),
         ];
         assert_eq!(result, expected);
     }

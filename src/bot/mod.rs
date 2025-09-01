@@ -7,9 +7,13 @@
 
 // for every game a bot is constructed. So the lifetime of the bot is the same as the game.
 
+pub mod cuddle_bot;
 pub mod easy_bot;
+pub mod gerhard;
+pub mod passive_bot;
 pub mod random_bot;
 mod i_am_the_danger_bot;
+pub mod scout_bot;
 
 use crate::coord::Coord;
 use crate::game::map_settings::MapSettings;
@@ -23,13 +27,17 @@ pub trait Bot {
     fn get_move(&mut self, map: &Map, player_location: Coord) -> Command;
 }
 
-pub type BotConstructor = fn(&str) -> Box<dyn Bot>;
+pub type BotConstructor = Box<dyn Fn() -> Box<dyn Bot>>;
 
 pub fn available_bots() -> Vec<BotConstructor> {
     vec![
-        |name| Box::new(random_bot::RandomBot::new(name.to_string())),
-        |name| Box::new(easy_bot::EasyBot::new(name.to_string())),
-        |name| Box::new(i_am_the_danger_bot::IAmTheDangerBot::new(name.to_string())),
+        Box::new(|| Box::new(random_bot::RandomBot::new())),
+        Box::new(|| Box::new(easy_bot::EasyBot::new())),
+        Box::new(|| Box::new(gerhard::GerhardBot::new())),
+        Box::new(|| Box::new(cuddle_bot::CuddleBot::new())),
+        Box::new(|| Box::new(scout_bot::ScoutBot::new())),
+        Box::new(|| Box::new(passive_bot::PassiveBot::new())),
+        Box::new(|| Box::new(i_am_the_danger_bot::IAmTheDangerBot::new())),
         // Voeg hier nieuwe bots toe!
     ]
 }
@@ -41,6 +49,6 @@ mod tests {
     #[test]
     fn all_bots_are_registered() {
         // Verwacht bijvoorbeeld 2 bots:
-        assert_eq!(available_bots().len(), 2);
+        assert_eq!(available_bots().len(), 6);
     }
 }

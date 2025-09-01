@@ -11,11 +11,7 @@ pub struct RandomBot {
     pub id: usize,
 }
 
-impl RandomBot {
-    pub fn new(name: String) -> Self {
-        RandomBot { name, id: 0 }
-    }
-}
+impl RandomBot {}
 
 impl Bot for RandomBot {
     fn name(&self) -> String {
@@ -27,7 +23,7 @@ impl Bot for RandomBot {
         // Randomly choose a command for the bot
         use rand::Rng;
         let mut rng = rand::rng();
-        let commands = vec![
+        let commands = [
             Command::Up,
             Command::Down,
             Command::Left,
@@ -35,11 +31,26 @@ impl Bot for RandomBot {
             Command::Wait,
             // Command::PlaceBomb,
         ];
-        commands[rng.random_range(0..commands.len())].clone()
+        commands[rng.random_range(0..commands.len())]
     }
 
     fn start_game(&mut self, _: &MapSettings, bot_id: usize) -> bool {
         self.id = bot_id;
         true
+    }
+}
+
+impl Default for RandomBot {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl RandomBot {
+    pub fn new() -> Self {
+        RandomBot {
+            name: "RandomBot".to_string(),
+            id: 0,
+        }
     }
 }
