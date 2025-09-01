@@ -14,7 +14,7 @@ impl MapDisplay for ConsoleDisplay {
                 let symbol = match cell {
                     crate::map::cell::CellType::Empty => "  ",
                     crate::map::cell::CellType::Wall => "🟥",
-                    crate::map::cell::CellType::Destroyable => "D ",
+                    crate::map::cell::CellType::Destroyable => "🟫",
                     crate::map::cell::CellType::Bomb => "💣",
                     crate::map::cell::CellType::Player => "😀",
                 };

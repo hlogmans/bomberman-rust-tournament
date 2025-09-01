@@ -18,6 +18,7 @@ use std::time::Duration;
 
 fn main() {
     use num_cpus;
+
     // Dynamisch aantal threads op basis van CPU cores
     let num_threads = num_cpus::get();
     println!("Aantal nuttige threads: {num_threads}");
