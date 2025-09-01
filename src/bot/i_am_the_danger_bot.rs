@@ -15,7 +15,7 @@ pub struct IAmTheDangerBot {
 }
 
 impl IAmTheDangerBot {
-    pub fn new(name: String) -> Self {
+    pub fn new() -> Self {
         static INIT: Once = Once::new();
 
         INIT.call_once(|| {
@@ -39,7 +39,7 @@ impl IAmTheDangerBot {
             println!("I am not in danger, I am the danger!");
             println!();
         });
-        IAmTheDangerBot { name, id: 0 }
+        IAmTheDangerBot { name:  "I am the danger bot".to_string(), id: 0 }
     }
 }
 
