@@ -1,15 +1,16 @@
 use std::collections::VecDeque;
-use crate::coord::{Col, Row};
 use crate::{
     bot::Bot,
     coord::Coord,
     game::map_settings::MapSettings,
     map::{Command, Map},
 };
+use crate::shrink::calculate_shrink_location;
 
 #[derive(Clone)]
 struct Node {
-    pos: Coord,
+    pos_row: usize,
+    pos_col: usize,
     time: usize,
     first_move: Option<Command>,
 }
@@ -21,14 +22,18 @@ pub struct MartijnBot {
     pub name: String,
     pub id: usize,
     map_settings: MapSettings,
+    turn: usize,
+    next_shrink_location: Option<Coord>,
 }
 
 impl MartijnBot {
     pub fn new() -> Self {
         MartijnBot {
-            name: "Martijn".to_string(),
+            name: "MartijnBot".to_string(),
             id: 0,
             map_settings: MapSettings::default(),
+            turn: 0,
+            next_shrink_location: None,
         }
     }
 
@@ -59,7 +64,7 @@ impl MartijnBot {
         for row in 0..map.height {
             for col in 0..map.width {
                 let idx = self.idx(row, col);
-                let cell = self.get_map_cell(Self::make_coord(row, col), map);
+                let cell = self.get_map_cell(row, col, map);
                 if cell == '.' {
                     heatmap[idx] = 1.0;
                 }
@@ -85,7 +90,7 @@ impl MartijnBot {
                     let new_col = (bomb_col as isize + delta_col * distance as isize) as usize;
 
                     if !self.out_of_bounds(new_row, new_col)
-                        && !self.is_wall(map, Self::make_coord(new_row, new_col))
+                        && !self.is_wall(map, new_row, new_col)
                     {
                         let idx = self.idx(new_row, new_col);
                         heatmap[idx] = bomb_heat;
@@ -112,7 +117,7 @@ impl MartijnBot {
                         let new_col = (col as isize + delta_col) as usize;
 
                         if !self.out_of_bounds(new_row, new_col)
-                            && !self.is_wall(map, Self::make_coord(new_row, new_col))
+                            && !self.is_wall(map, new_row, new_col)
                         {
                             let new_index = self.idx(new_row, new_col);
                             propagated_heatmap[new_index] += original_value * 0.25;
@@ -138,26 +143,28 @@ impl MartijnBot {
     fn find_escape_path(
         &self,
         map: &Map,
-        start: Coord,
+        start_row: usize,
+        start_col: usize,
         bomb_heatmap: &Vec<f32>,
     ) -> Option<(Command, usize)> {
         let mut visited = vec![false; bomb_heatmap.len()];
         let mut queue = VecDeque::new();
 
-        let start_idx = self.idx(start.row.get(), start.col.get());
+        let start_idx = self.idx(start_row, start_col);
         if bomb_heatmap[start_idx] == 0.0 {
             return Some((Command::Wait, 0));
         }
 
         queue.push_back(Node {
-            pos: start,
+            pos_row: start_row,
+            pos_col: start_col,
             time: 0,
             first_move: None,
         });
         visited[start_idx] = true;
 
         while let Some(node) = queue.pop_front() {
-            let idx = self.idx(node.pos.row.get(), node.pos.col.get());
+            let idx = self.idx(node.pos_row, node.pos_col);
 
             if bomb_heatmap[idx] == 0.0 {
                 return node.first_move.map(|dir| (dir, node.time));
@@ -169,8 +176,8 @@ impl MartijnBot {
                 (0, -1, Command::Left),
                 (0, 1, Command::Right),
             ] {
-                let nr_isize = node.pos.row.get() as isize + dr;
-                let nc_isize = node.pos.col.get() as isize + dc;
+                let nr_isize = node.pos_row as isize + dr;
+                let nc_isize = node.pos_col as isize + dc;
 
                 if nr_isize < 0 || nc_isize < 0 {
                     continue;
@@ -183,8 +190,7 @@ impl MartijnBot {
                     continue;
                 }
 
-                let new_coord = Self::make_coord(nr, nc);
-                if !self.is_clear(map, new_coord) {
+                if !self.is_clear(map, nr, nc) {
                     continue;
                 }
 
@@ -195,7 +201,8 @@ impl MartijnBot {
 
                 visited[new_idx] = true;
                 queue.push_back(Node {
-                    pos: new_coord,
+                    pos_row: nr,
+                    pos_col: nc,
                     time: node.time + 1,
                     first_move: node.first_move.or(Some(dir)),
                 });
@@ -206,58 +213,30 @@ impl MartijnBot {
     }
 
 
-    fn breakable_in_range(&self, map: &Map, pos: Coord) -> bool {
-        for &(dr, dc) in &[(-1,0),(1,0),(0,-1),(0,1)] {
-            for step in 1..=self.map_settings.bombradius {
-                let nr_isize = pos.row.get() as isize + dr * step as isize;
-                let nc_isize = pos.col.get() as isize + dc * step as isize;
 
-                if nr_isize < 0 || nc_isize < 0 {
-                    break;
-                }
-
-                let nr = nr_isize as usize;
-                let nc = nc_isize as usize;
-
-                if self.out_of_bounds(nr, nc) {
-                    break;
-                }
-
-                let cell_tpe = self.get_map_cell(Self::make_coord(nr, nc), map);
-
-                if cell_tpe == 'W' { break; }
-                if cell_tpe == '.' { return true; }
-            }
-        }
-        false
-    }
-
-    fn can_safely_place_bomb(&self, map: &Map, pos: Coord, current_bomb_heatmap: &Vec<f32>) -> bool {
+    fn can_safely_place_bomb(&self, map: &Map, pos_row: usize, pos_col: usize, current_bomb_heatmap: &Vec<f32>) -> bool {
         let mut simulated_heatmap = current_bomb_heatmap.clone();
         let bomb_heat = 1.0;
 
-        let row = pos.row.get();
-        let col = pos.col.get();
-
-        simulated_heatmap[self.idx(row, col)] = bomb_heat;
+        simulated_heatmap[self.idx(pos_row, pos_col)] = bomb_heat;
 
         for &(dr, dc) in &[(-1,0),(1,0),(0,-1),(0,1)] {
             for distance in 1..=self.map_settings.bombradius {
-                let nr_isize = row as isize + dr * distance as isize;
-                let nc_isize = col as isize + dc * distance as isize;
+                let nr_isize = pos_row as isize + dr * distance as isize;
+                let nc_isize = pos_col as isize + dc * distance as isize;
 
                 if nr_isize < 0 || nc_isize < 0 { break; }
                 let nr = nr_isize as usize;
                 let nc = nc_isize as usize;
                 if self.out_of_bounds(nr, nc) { break; }
 
-                let cell = self.get_map_cell(Self::make_coord(nr, nc), map);
+                let cell = self.get_map_cell(nr, nc, map);
                 if cell == 'W' { break; }
 
                 simulated_heatmap[self.idx(nr, nc)] = bomb_heat;
             }
         }
-        self.find_escape_path(map, pos, &simulated_heatmap).is_some()
+        self.find_escape_path(map, pos_row, pos_col, &simulated_heatmap).is_some()
     }
 
 
@@ -265,8 +244,10 @@ impl MartijnBot {
         let enemy_heatmap = self.propagate_and_normalize(map, self.create_enemy_heatmap(map));
         let bomb_heatmap = self.create_blast_heatmap(map);
         let breakable_heatmap = self.propagate_and_normalize(map, self.create_breakable_heatmap(map));
-        let current_index = self.idx(_player_location.row.get(), _player_location.col.get());
-        let escape_path: Option<(Command,usize)> = self.find_escape_path(map, _player_location, &bomb_heatmap);
+        let player_row = _player_location.row.get();
+        let player_col = _player_location.col.get();
+        let current_index = self.idx(player_row, player_col);
+        let escape_path: Option<(Command,usize)> = self.find_escape_path(map, player_row, player_col, &bomb_heatmap);
 
         if bomb_heatmap[current_index] > 0.0 {
             return if let Some((direction, _steps)) = escape_path {
@@ -286,10 +267,10 @@ impl MartijnBot {
             (Command::Right, 0, 1),
             (Command::Wait, 0, 0)
         ] {
-            let new_row = (_player_location.row.get() as isize + delta_row) as usize;
-            let new_col = (_player_location.col.get() as isize + delta_col) as usize;
+            let new_row = (player_row as isize + delta_row) as usize;
+            let new_col = (player_col as isize + delta_col) as usize;
             let is_wait = delta_row == 0 && delta_col == 0;
-            if  !is_wait && !self.is_clear(map, Self::make_coord(new_row, new_col)) {
+            if  !is_wait && !self.is_clear(map, new_row, new_col) {
                 continue;
             }
 
@@ -302,7 +283,8 @@ impl MartijnBot {
 
             let escape_score = if let Some((_dir, steps)) = self.find_escape_path(
                 map,
-                Self::make_coord(new_row, new_col),
+                new_row,
+                new_col,
                 &bomb_heatmap,
             ) {
                 -(steps as f32)
@@ -327,7 +309,7 @@ impl MartijnBot {
             let breakable_nearby =  breakable_heatmap[current_index] > 0.4; //self.breakable_in_range(map, _player_location);
 
             if enemy_nearby || breakable_nearby {
-                if self.can_safely_place_bomb(map, _player_location, &bomb_heatmap) {
+                if self.can_safely_place_bomb(map, player_row, player_col, &bomb_heatmap) {
                     return Command::PlaceBomb;
                 }
             }
@@ -337,31 +319,40 @@ impl MartijnBot {
     }
 
 
+    #[inline(always)]
     fn empty_heatmap(&self) -> Vec<f32> {
         vec![0.0; self.map_settings.width * self.map_settings.height]
     }
 
-    fn is_wall(&self, map: &Map, coord: Coord) -> bool {
-        let cell = self.get_map_cell(coord, map);
+    #[inline(always)]
+    fn is_wall(&self, map: &Map, row: usize, col: usize) -> bool {
+        let cell = self.get_map_cell(row, col, map);
         cell == 'W' ||  cell == '.'
     }
-    fn is_clear(&self, map: &Map, coord: Coord) -> bool {
-        self.get_map_cell(coord, map) == ' '
+
+    #[inline(always)]
+    fn is_clear(&self, map: &Map, row: usize, col: usize) -> bool {
+        self.get_map_cell(row, col, map) == ' ' && (self.next_shrink_location.is_none()  || (
+            self.next_shrink_location.is_some()
+            && self.next_shrink_location.unwrap().col.get() != col
+            && self.next_shrink_location.unwrap().row.get() != row))
     }
-    fn make_coord(row: usize, col: usize) -> Coord {
-        Coord::new(Col::new(col), Row::new(row))
+
+    #[inline(always)]
+    fn get_map_cell(&self, row: usize, col: usize, map: &Map) -> char {
+        self.get_grid_value(&map.grid, row, col)
     }
-    fn get_map_cell(&self, coord: Coord, map: &Map) -> char {
-        self.get_grid_value(&map.grid, coord)
-    }
-    fn get_grid_value<T: Copy>(&self, grid: &Vec<T>, location: Coord) -> T {
+    #[inline(always)]
+    fn get_grid_value<T: Copy>(&self, grid: &Vec<T>, row: usize, col: usize) -> T {
         *grid
-            .get(self.idx(location.row.get(), location.col.get()))
+            .get(self.idx(row, col))
             .expect("Out of bounds")
     }
+    #[inline(always)]
     fn idx(&self, row: usize, col: usize) -> usize {
         row * self.map_settings.width + col
     }
+    #[inline(always)]
     fn out_of_bounds(&self, row: usize, col: usize) -> bool {
         row >= self.map_settings.height || col >= self.map_settings.width
     }
@@ -380,8 +371,18 @@ impl Bot for MartijnBot {
     }
 
     fn get_move(&mut self, map: &Map, _player_location: Coord) -> Command {
+        if map.map_settings.endgame <= self.turn {
+            self.next_shrink_location = None;
+            if let Some(shrink_location) = calculate_shrink_location(
+                self.turn - map.map_settings.endgame,
+                map.map_settings.width,
+                map.map_settings.height,
+            ) {
+                self.next_shrink_location = Some(shrink_location);
+            }
+        }
+        self.turn = self.turn + 1;
         let next_move = self.decide_move(map, _player_location);
         next_move
-
     }
 }
