@@ -18,7 +18,7 @@ struct Node {
 
 
 #[derive(Clone)]
-pub struct MartijnBot {
+pub struct MlBot {
     pub name: String,
     pub id: usize,
     map_settings: MapSettings,
@@ -26,9 +26,9 @@ pub struct MartijnBot {
     next_shrink_location: Option<Coord>,
 }
 
-impl MartijnBot {
+impl MlBot {
     pub fn new() -> Self {
-        MartijnBot {
+        MlBot {
             name: "MartijnBot".to_string(),
             id: 0,
             map_settings: MapSettings::default(),
@@ -358,7 +358,7 @@ impl MartijnBot {
     }
 }
 
-impl Bot for MartijnBot {
+impl Bot for MlBot {
     fn name(&self) -> String {
         // return the name plus the ID
         format!("{} ({})", self.name, self.id)
