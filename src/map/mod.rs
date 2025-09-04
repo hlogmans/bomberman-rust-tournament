@@ -11,7 +11,6 @@ pub use player::*;
 use crate::coord::Col;
 use crate::coord::Coord;
 use crate::coord::Row;
-use crate::coord::ValidCoord;
 use crate::game::map_settings::MapSettings;
 
 // a map is a 2D vector of characters. But also contains a list of players and a turn number.

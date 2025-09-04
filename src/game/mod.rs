@@ -4,6 +4,7 @@ pub mod map_settings;
 
 use crate::map::CellType;
 use rand::seq::SliceRandom;
+use rand::{rng};
 
 use crate::{
     bot::Bot,
@@ -15,25 +16,21 @@ use crate::{
 
 pub struct Game {
     map: Map,
-
     bots: Vec<Box<dyn Bot>>,
-
     display: Box<dyn MapDisplay>,
-
     #[allow(dead_code)]
     player_count: usize,
-    // map turn. Every player sets a cmmmand for the current turn.
     turn: usize,
-
-    // history of handles player actions, it is deterministic, so it can be replayed.
+    // history of handled player actions, it is deterministic, so it can be replayed.
     player_actions: Vec<(usize, Command)>,
-
     // if the winner is determined, it will be set to Some(index of the winner)
     pub winner: Option<usize>,
-
     // this is the list of active players that can do a move. The game is won if only one is alive.
     // at start the list is randomized.
     alive_players: Vec<usize>,
+    is_alive: Vec<bool>,            // track alive status of each player
+    alive_count: usize,             // number of alive players
+    explosion_buffer: Vec<Coord>,   // reusable buffer to avoid allocations for explosions
 }
 
 impl Game {
@@ -49,7 +46,6 @@ impl Game {
     ///
     /// A game result object that contains the winner and the history of player actions.
     pub fn build(width: usize, height: usize, players: Vec<Box<dyn Bot>>) -> Game {
-        // Create a new game instance with the given width, height, and players.
         let mut game = Game::new(width, height, players);
         game.init();
         game
@@ -74,8 +70,6 @@ impl Game {
             map_settings.clone(),
         );
 
-        //let endgame = map_settings.endgame;
-
         Game {
             map,
             bots: players,
@@ -83,14 +77,17 @@ impl Game {
             turn: 0,
             player_actions: Vec::new(),
             winner: None,
-            // initialize alive player and shuffle them
             alive_players: Vec::new(),
             display: Box::new(ConsoleDisplay),
+            is_alive: vec![true; player_count],
+            alive_count: player_count,
+            explosion_buffer: Vec::with_capacity(20),
         }
     }
 
+    /// Initialize the game by shuffling players and notifying each bot
     fn init(&mut self) {
-        let mut rng = rand::rng();
+        let mut rng = rng();
         self.alive_players = (0..self.bots.len()).collect();
         self.alive_players.shuffle(&mut rng);
 
@@ -100,13 +97,15 @@ impl Game {
         }
     }
 
+    /// Run the game loop until a winner is found
     pub fn run(&mut self) -> GameResult {
         while self.winner.is_none() {
             self.run_round(None, None, None);
         }
         GameResult::build(self)
-    } // loop until a winner is set
+    }
 
+    /// Replay a sequence of commands instead of live bot moves
     pub fn replay(&mut self, commands: &Vec<Command>) -> GameResult {
         while self.winner.is_none() {
             self.run_round(None, Some(commands), None);
@@ -114,50 +113,47 @@ impl Game {
         GameResult::build(self)
     }
 
+    /// Returns the name of the winner if there is one
     pub fn winner_name(&self) -> Option<String> {
-        match self.winner {
-            None => None,
-            Some(x) => self.map.get_player_name(x),
-        }
+        // Flatten Option<Option<String>> to Option<String>
+        self.winner.and_then(|x| self.map.get_player_name(x))
     }
 
-    /// run a single turn for the game. Has a callback for player actions.
-    /// returns true if the game has a winner, false otherwise.
-    /// There is a callback to check game status like turn number.
+    /// Run a single round (turn) of the game
+    /// Returns true if a winner is found, false otherwise
     pub fn run_round(
         &mut self,
         progress_callback: Option<&mut dyn FnMut(&GameProgress)>,
         replay_commands: Option<&Vec<Command>>,
         logging_callback: Option<&mut dyn FnMut(String)>,
     ) -> bool {
-        // This method will run a round of the game.
-        // It will handle player actions, update the map, and check for a winner.
+        // Check for winner before processing
         if self.check_winner() {
             return true;
         }
 
         // Process player actions for the current turn
-        for player_index in 0..self.alive_players.len() {
-            let bot = self
-                .bots
-                .get_mut(player_index)
-                .expect("Bot not found for player index");
+        for player_index in 0..self.player_count {
+            if !self.is_alive[player_index] {
+                continue;
+            }
+
+            let bot = &mut self.bots[player_index];
             let loc = self.map.get_player(player_index).unwrap().position;
 
             // if the game is a replay, take the move from the Vec
-            let bot_move;
-            if let Some(replay_commands) = replay_commands {
-                bot_move = replay_commands[player_index];
+            let bot_move = if let Some(replay_commands) = replay_commands {
+                replay_commands[player_index]
             } else {
-                bot_move = bot.get_move(&self.map, loc); // Call the provided callback to get the player's command
-            }
+                bot.get_move(&self.map, loc) // Call bot for move
+            };
 
             self.player_actions.push((player_index, bot_move));
 
             // handle the command
             self.map.perform_move(player_index, bot_move);
 
-            // Check for winner after processing all actions
+            // Check for winner after processing moves
             if self.check_winner() {
                 return true;
             }
@@ -168,7 +164,7 @@ impl Game {
             return true;
         }
 
-        // reduce map size if needed
+        // reduce map size if needed (shrink)
         if self.map.map_settings.endgame <= self.turn {
             if let Some(shrink_location) = calculate_shrink_location(
                 self.turn - self.map.map_settings.endgame,
@@ -180,37 +176,35 @@ impl Game {
 
                 // check if there is a player at the shrink location
                 if let Some(player_index) = self.map.get_player_index_at_location(shrink_location) {
-                    // Remove the player from the game
-                    let playername = self.map.get_player_name(player_index);
-                    if let Some(player_name) = playername
-                        && let Some(cb) = logging_callback
-                    {
-                        cb(format!(
-                            "Player {player_name} has been removed from the game due to shrinking at location {shrink_location:?}"
-                        ));
-                    }
+                    self.is_alive[player_index] = false;
+                    self.alive_count -= 1;
 
-                    self.alive_players.retain(|&x| x != player_index);
+                    // Optional logging
+                    if let Some(player_name) = self.map.get_player_name(player_index) {
+                        if let Some(cb) = logging_callback {
+                            cb(format!(
+                                "Player {player_name} has been removed from the game due to shrinking at location {shrink_location:?}"
+                            ));
+                        }
+                    }
                 }
+
                 if self.check_winner() {
                     return true;
                 }
             } else {
-                // If no valid shrink location is found, we can handle it as needed.
-                // For now, we will just log an error or panic.
                 panic!("No valid shrink location found for turn {}", self.turn);
             }
-
-            // set map location to wall
         }
 
         if self.check_winner() {
             return true;
         }
 
-        // Increment turn
+        // Increment turn counter
         self.turn += 1;
 
+        // Optional progress callback
         if let Some(callback) = progress_callback {
             let progress = GameProgress {
                 turn: self.turn,
@@ -222,25 +216,30 @@ impl Game {
         false
     }
 
-    /// Check if there is a winner after each round
-    /// Returns true if there is a winner, false otherwise.
+    /// Check if a winner exists. Updates `self.winner` accordingly.
     fn check_winner(&mut self) -> bool {
-        // Check if there is only one player left alive
-        let alive_count = self.alive_players.len();
-        if alive_count == 1 {
-            // Set the winner to the index of the last remaining player
-            self.winner = self.alive_players.first().copied(); // Assuming the first player in alive_players is the winner
-            return true;
-        } else if alive_count == 0 {
-            // If no players are left, set winner to None or handle as needed
+        if self.alive_count == 1 {
+            self.winner = Some(
+                self.is_alive
+                    .iter()
+                    .enumerate()
+                    .find(|&(_, alive)| *alive)
+                    .unwrap()
+                    .0,
+            );
+            true
+        } else if self.alive_count == 0 {
             self.winner = None;
-            return true;
+            true
+        } else {
+            false
         }
-        false
     }
 
-    fn bomb_explosion_locations(&self, location: Coord) -> Vec<Coord> {
-        let mut locations = vec![location];
+    /// Calculate all locations affected by a bomb explosion
+    fn bomb_explosion_locations(&mut self, location: Coord) -> Vec<Coord> {
+        self.explosion_buffer.clear();
+        self.explosion_buffer.push(location);
 
         let directions = [
             |c: Coord| c.move_up(),
@@ -250,28 +249,25 @@ impl Game {
         ];
 
         // Iterate over each direction and extend the explosion
-        for direction in directions.iter() {
-            let mut current_loc = Some(location);
+        for dir in directions {
+            let mut current = Some(location);
             for _ in 1..=self.map.map_settings.bombradius {
-                current_loc = current_loc.and_then(direction);
+                current = current.and_then(dir);
 
-                if let Some(loc) = current_loc {
+                if let Some(loc) = current {
                     let cell_type = self.map.cell_type(loc);
 
                     match cell_type {
                         // A wall stops the explosion completely in this direction.
-                        CellType::Wall => {
-                            break;
-                        }
+                        CellType::Wall => break,
                         // A destructible block stops the explosion, but is still destroyed.
-                        // So we add its location and then stop.
                         CellType::Destroyable => {
-                            locations.push(loc);
+                            self.explosion_buffer.push(loc);
                             break;
                         }
                         // Empty space, a player, or a bomb will be affected, and the explosion continues.
                         _ => {
-                            locations.push(loc);
+                            self.explosion_buffer.push(loc);
                         }
                     }
                 } else {
@@ -280,46 +276,28 @@ impl Game {
             }
         }
 
-        locations
+        // Return a fresh Vec to avoid borrow conflicts
+        self.explosion_buffer.clone()
     }
 
-    /// process the bombs. If there is a winner, return true. Then not all bombs might have been processed.
-    /// It stops immediately if a winner is found.
+    /// Process bombs and apply damage/explosions. Returns true if a winner is found.
     fn process_bombs(&mut self, _logging_callback: &Option<&mut dyn FnMut(String)>) -> bool {
-        // step one: check for all bombs that have 1 round left, those will explode this turn
-        // changed to a while loop
-
-        // step two: for each bomb that explodes, check the surrounding cells and destroy them if they are destructible
-        // for each bomb that explodes, check for each exploding field if there is a player on it, if so, remove the player from the game
-        // and check if only one player is left, if so, set the winner to that player.
-        // if an exploding field is a bomb, remove it from the map (it won't explode, even if it should explode now).
-
-        // remove 1 from all the bomb timers
+        // step one: decrease timers of all bombs
         self.map.bomb_timer_decrease();
 
-        // step 2a: check the bomb location to destroy destructible fields
+        // step two: handle explosions
         while let Some(bomb) = self.map.get_next_exploding_bomb_location() {
             self.map.remove_bomb(bomb);
             let explosion_locations = self.bomb_explosion_locations(bomb);
+
             for location in explosion_locations {
-                // Check if the location is destructible
-                // first just remove any destructible field at this location
+                // Clear destructible fields
                 self.map.clear_destructable(location);
 
-                // clear any bomb at this location
-                // if so, it might also need to be removed from the current boms_to_explode list.
-
-                // Check if there is a player at this location, there can only be one
+                // Check for player hit
                 if let Some(player_index) = self.map.get_player_index_at_location(location) {
-                    // if let Some(cb) = logging_callback {
-                    //     cb(format!(
-                    //         "Player {} has been hit by a bomb at location {:?}",
-                    //         player_index, location
-                    //     ));
-                    // }
-
-                    // Remove the player from the game
-                    self.alive_players.retain(|&x| x != player_index);
+                    self.is_alive[player_index] = false;
+                    self.alive_count -= 1;
 
                     // Check if there is a winner
                     if self.check_winner() {
@@ -333,6 +311,7 @@ impl Game {
         // step three: decrease the timer of all bombs by 1, and remove those that have a timer of 0
     }
 
+    /// Display the current map state
     pub fn display(&self) {
         self.display.display(&self.map);
     }
@@ -356,7 +335,10 @@ mod tests {
             player_actions: vec![],
             winner: None,
             alive_players: vec![],
+            is_alive: vec![],
+            alive_count: 0,
             display: Box::new(ConsoleDisplay),
+            explosion_buffer: vec![],
         }
     }
 
@@ -394,7 +376,7 @@ mod tests {
 
     #[test]
     fn test_bomb_explosion_corner() {
-        let game = setup_game(5, 5);
+        let mut game = setup_game(5, 5);
 
         let loc = Coord::from(1, 1);
         let result = game.bomb_explosion_locations(loc);
@@ -410,7 +392,7 @@ mod tests {
 
     #[test]
     fn test_bomb_explosion_corner_with_destructable() {
-        let game = setup_game(5, 5);
+        let mut game = setup_game(5, 5);
         let loc = Coord::from(3, 3);
 
         let result = game.bomb_explosion_locations(loc);
@@ -426,7 +408,7 @@ mod tests {
 
     #[test]
     fn test_bomb_explosion_range_1() {
-        let game = setup_game(5, 5);
+        let mut game = setup_game(5, 5);
         let loc = Coord::from(2, 2);
         let result = game.bomb_explosion_locations(loc);
         let expected = vec![
