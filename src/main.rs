@@ -92,9 +92,10 @@ fn main() {
     }*/
 
     // Sort scores by number of wins in descending order
-    let mut sorted_scores = grand_totals.scores.clone();
+    let mut sorted_scores: Vec<(_, _)> = grand_totals.scores.iter().collect();
     // sort_by on the percentage of wins, compared as float
     // null exception possible
+
     sorted_scores.sort_by(|a, b| {
         (b.1.wins as f64 / b.1.total_games as f64)
             .total_cmp(&(a.1.wins as f64 / a.1.total_games as f64))
