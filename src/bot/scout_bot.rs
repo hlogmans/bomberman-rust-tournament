@@ -24,7 +24,7 @@ impl ScoutBot {
             name: "ScoutBot".to_string(),
             id: 0,
             map_settings: MapSettings::default(),
-            passive_bot: PassiveBot::new("helping".to_string()),
+            passive_bot: PassiveBot::new(),
             command_list: vec![],
             current_index: 0,
             looping: false,
