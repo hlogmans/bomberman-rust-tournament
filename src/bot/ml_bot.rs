@@ -38,7 +38,7 @@ impl MlBot {
     }
 
     fn propagate_and_normalize(&self, map: &Map, mut heatmap: Vec<f32>) -> Vec<f32> {
-        for _ in 0..3 {
+        for _ in 0..5 {
             heatmap = self.propagate_heatmap(map, &heatmap);
         }
         self.normalize_vec(&mut heatmap);
@@ -47,7 +47,10 @@ impl MlBot {
     }
 
     fn create_enemy_heatmap(&self, map: &Map) -> Vec<f32> {
-        let mut heatmap = self.empty_heatmap();
+        //let mut heatmap = self.empty_heatmap();
+        let mut heatmap = vec![0.01; self.map_settings.width * self.map_settings.height];
+
+
 
         map.players
             .iter()
@@ -306,7 +309,7 @@ impl MlBot {
 
         if bomb_heatmap[current_index] == 0.0 {
             let enemy_nearby = enemy_heatmap[current_index] > 0.8;
-            let breakable_nearby =  breakable_heatmap[current_index] > 0.4; //self.breakable_in_range(map, _player_location);
+            let breakable_nearby =  breakable_heatmap[current_index] > 0.3;
 
             if enemy_nearby || breakable_nearby {
                 if self.can_safely_place_bomb(map, player_row, player_col, &bomb_heatmap) {
@@ -383,6 +386,7 @@ impl Bot for MlBot {
         }
         self.turn = self.turn + 1;
         let next_move = self.decide_move(map, _player_location);
+        //println!("{:?}", next_move);
         next_move
     }
 }
