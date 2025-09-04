@@ -1,11 +1,13 @@
+use std::collections::HashMap;
 use std::time::Duration;
-
-use rand::Rng;
 
 use crate::{
     bot::{Bot, BotConstructor},
     game,
 };
+
+use std::sync::{Arc, Mutex};
+use rand::prelude::SliceRandom;
 
 // This file contains the code for the tournament logic.
 // Objectives:
@@ -21,38 +23,36 @@ pub struct Score {
 }
 
 pub struct BotScores {
-    pub scores: Vec<(String, Score)>,
+    pub scores: HashMap<String, Score>,
     pub total_games: usize,
 }
 
 impl BotScores {
     pub fn new() -> Self {
         BotScores {
-            scores: Vec::new(),
+            scores: HashMap::new(),
             total_games: 0,
         }
     }
 
-    pub fn add_score(&mut self, botname: String, score_to_add: Score) {
-        // check if bot already exists in scores
-        if let Some((_, score)) = self.scores.iter_mut().find(|(name, _)| name == &botname) {
-            score.wins += score_to_add.wins;
-            score.losses += score_to_add.losses;
-            score.total_games += score_to_add.total_games;
-        } else {
-            self.scores.push((botname, score_to_add));
-        }
+    pub fn add_score(&mut self, botname: &str, score_to_add: Score) {
+        self.scores
+            .entry(botname.to_string())
+            .and_modify(|score| {
+                score.wins += score_to_add.wins;
+                score.losses += score_to_add.losses;
+                score.total_games += score_to_add.total_games;
+            })
+            .or_insert(score_to_add);
     }
 
     pub fn merge_with(&mut self, other: &BotScores) {
         for (botname, score) in other.scores.iter() {
-            self.add_score(botname.clone(), *score);
+            self.add_score(botname, *score);
         }
         self.total_games += other.total_games;
     }
 }
-
-use std::sync::{Arc, Mutex};
 
 pub fn run_tournament(
     bot_constructors: &[BotConstructor],
@@ -86,11 +86,11 @@ pub fn run_tournament(
             break;
         }
 
-        let idx1 = rand.random_range(0..botcount);
-        let mut idx2 = rand.random_range(0..botcount);
-        while idx2 == idx1 {
-            idx2 = rand.random_range(0..botcount);
-        }
+        let mut indices: Vec<usize> = (0..botcount).collect();
+        indices.shuffle(&mut rand);
+        let idx1 = indices[0];
+        let idx2 = indices[1];
+
         // pick two bots at random
         let bot1 = bot_constructors[idx1]();
         let bot2 = bot_constructors[idx2]();
@@ -101,7 +101,7 @@ pub fn run_tournament(
         // run a game and update scores
         let scores = run_game(game_bots);
         for (bot, score) in bot_names.iter().zip(scores) {
-            bot_scores.add_score(bot.clone(), score);
+            bot_scores.add_score(bot, score);
         }
     }
 
