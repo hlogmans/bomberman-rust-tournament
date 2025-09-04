@@ -56,7 +56,6 @@ use std::sync::{Arc, Mutex};
 
 pub fn run_tournament(
     bot_constructors: &[BotConstructor],
-    bot_configs: &[(usize, String)],
     round_counter: Option<(usize, Arc<Mutex<Vec<usize>>>)>,
 ) -> BotScores {
     // Implement the tournament logic here
@@ -65,7 +64,7 @@ pub fn run_tournament(
     let time_limit = Duration::from_secs(10);
 
     let mut rand = rand::rng();
-    let botcount = bot_configs.len();
+    let botcount = bot_constructors.len();
 
     let mut bot_scores = BotScores::new();
 
@@ -93,8 +92,8 @@ pub fn run_tournament(
             idx2 = rand.random_range(0..botcount);
         }
         // pick two bots at random
-        let bot1 = bot_constructors[bot_configs[idx1].0]();
-        let bot2 = bot_constructors[bot_configs[idx2].0]();
+        let bot1 = bot_constructors[idx1]();
+        let bot2 = bot_constructors[idx2]();
 
         let game_bots: Vec<Box<dyn Bot>> = vec![bot1, bot2];
 

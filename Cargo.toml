@@ -6,3 +6,6 @@ edition = "2024"
 [dependencies]
 rand = "0.9.1"
 num_cpus = "1.13"
+
+[profile.release]
+lto = true

@@ -13,6 +13,12 @@ pub struct GerhardBot {
     map_settings: MapSettings,
 }
 
+impl Default for GerhardBot {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GerhardBot {
     pub fn new() -> Self {
         GerhardBot {
@@ -39,7 +45,7 @@ impl GerhardBot {
             }
         }
 
-        return opts;
+        opts
     }
 
     fn is_a_bot_near(&self, map: &Map, me: Coord) -> bool {
@@ -57,7 +63,7 @@ impl GerhardBot {
             }
         }
 
-        return false;
+        false
     }
 
     fn is_danger(&self, map: &Map, locaction: Coord) -> bool {
@@ -65,9 +71,9 @@ impl GerhardBot {
             let same_row = bomb.position.row.get() == locaction.row.get();
             let same_col = bomb.position.col.get() == locaction.col.get();
             let row_dist =
-                (bomb.position.row.get() as i32 - locaction.row.get() as i32).abs() as usize;
+                (bomb.position.row.get() as i32 - locaction.row.get() as i32).unsigned_abs() as usize;
             let col_dist =
-                (bomb.position.col.get() as i32 - locaction.col.get() as i32).abs() as usize;
+                (bomb.position.col.get() as i32 - locaction.col.get() as i32).unsigned_abs() as usize;
 
             (same_row && col_dist <= self.map_settings.bombradius + 5)
                 || (same_col && row_dist <= self.map_settings.bombradius + 5)

@@ -80,6 +80,12 @@ impl Coord {
     }
 }
 
+impl Default for EasyBot {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EasyBot {
     pub fn new() -> Self {
         EasyBot {
@@ -107,8 +113,8 @@ impl EasyBot {
         ];
 
         for (m1, m2) in options {
-            if let Some(loc1) = loc.move_command(m1) {
-                if let Some(loc2) = loc1.move_command(m2) {
+            if let Some(loc1) = loc.move_command(m1)
+                && let Some(loc2) = loc1.move_command(m2) {
                     // if both locations are empty, then we can bomb there
                     if self.get_cell(map, loc1) == ' ' && self.get_cell(map, loc2) == ' ' {
                         return Some(vec![
@@ -120,7 +126,6 @@ impl EasyBot {
                         ]);
                     }
                 }
-            }
         }
         None
     }

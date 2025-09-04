@@ -13,6 +13,12 @@ pub struct CuddleBot {
     map_settings: MapSettings,
 }
 
+impl Default for CuddleBot {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CuddleBot {
     pub fn new() -> Self {
         CuddleBot {
@@ -39,7 +45,7 @@ impl CuddleBot {
             }
         }
 
-        return opts;
+        opts
     }
 
     fn is_a_bot_near(&self, map: &Map, me: Coord) -> bool {
@@ -57,7 +63,7 @@ impl CuddleBot {
             }
         }
 
-        return false;
+        false
     }
 
     fn is_danger(&self, map: &Map, locaction: Coord) -> bool {
@@ -65,9 +71,9 @@ impl CuddleBot {
             let same_row = bomb.position.row.get() == locaction.row.get();
             let same_col = bomb.position.col.get() == locaction.col.get();
             let row_dist =
-                (bomb.position.row.get() as i32 - locaction.row.get() as i32).abs() as usize;
+                (bomb.position.row.get() as i32 - locaction.row.get() as i32).unsigned_abs() as usize;
             let col_dist =
-                (bomb.position.col.get() as i32 - locaction.col.get() as i32).abs() as usize;
+                (bomb.position.col.get() as i32 - locaction.col.get() as i32).unsigned_abs() as usize;
 
             (same_row && col_dist <= self.map_settings.bombradius + 5)
                 || (same_col && row_dist <= self.map_settings.bombradius + 5)
@@ -91,7 +97,7 @@ impl CuddleBot {
             }
         }
 
-        return opts;
+        opts
     }
 
     fn is_player_this_direction(&self, map: &Map, locaction: Coord) -> bool {
@@ -102,9 +108,9 @@ impl CuddleBot {
                 let same_row = player.position.row.get() == locaction.row.get();
                 let same_col = player.position.col.get() == locaction.col.get();
                 let row_dist =
-                    (player.position.row.get() as i32 - locaction.row.get() as i32).abs() as usize;
+                    (player.position.row.get() as i32 - locaction.row.get() as i32).unsigned_abs() as usize;
                 let col_dist =
-                    (player.position.col.get() as i32 - locaction.col.get() as i32).abs() as usize;
+                    (player.position.col.get() as i32 - locaction.col.get() as i32).unsigned_abs() as usize;
                 (same_row && col_dist >= self.map_settings.bombradius)
                     || (same_col && row_dist >= self.map_settings.bombradius)
             })

@@ -40,6 +40,12 @@ impl Bot for RandomBot {
     }
 }
 
+impl Default for RandomBot {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RandomBot {
     pub fn new() -> Self {
         RandomBot {

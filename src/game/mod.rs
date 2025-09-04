@@ -253,7 +253,7 @@ impl Game {
         for direction in directions.iter() {
             let mut current_loc = Some(location);
             for _ in 1..=self.map.map_settings.bombradius {
-                current_loc = current_loc.and_then(|l| direction(l));
+                current_loc = current_loc.and_then(direction);
 
                 if let Some(loc) = current_loc {
                     let cell_type = self.map.cell_type(loc);
