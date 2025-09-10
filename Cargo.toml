@@ -7,5 +7,12 @@ edition = "2024"
 rand = "0.9.1"
 num_cpus = "1.13"
 
+[dev-dependencies]
+criterion = "0.7"
+
+[[bench]]
+name = "tournament_benchmark"
+harness = false
+
 [profile.release]
 lto = true

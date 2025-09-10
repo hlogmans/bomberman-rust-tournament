@@ -62,10 +62,6 @@ pub fn run_tournament(
     //
     let start_time = std::time::Instant::now();
     let time_limit = Duration::from_secs(10);
-
-    let mut rand = rand::rng();
-    let botcount = bot_constructors.len();
-
     let mut bot_scores = BotScores::new();
 
     let mut games_played = 0;
@@ -86,18 +82,9 @@ pub fn run_tournament(
             break;
         }
 
-        let idx1 = rand.random_range(0..botcount);
-        let mut idx2 = rand.random_range(0..botcount);
-        while idx2 == idx1 {
-            idx2 = rand.random_range(0..botcount);
-        }
-        // pick two bots at random
-        let bot1 = bot_constructors[idx1]();
-        let bot2 = bot_constructors[idx2]();
-
-        let game_bots: Vec<Box<dyn Bot>> = vec![bot1, bot2];
-
+        let game_bots = prepare_bots(bot_constructors);
         let bot_names = game_bots.iter().map(|bot| bot.name()).collect::<Vec<_>>();
+
         // run a game and update scores
         let scores = run_game(game_bots);
         for (bot, score) in bot_names.iter().zip(scores) {
@@ -114,9 +101,25 @@ pub fn run_tournament(
     bot_scores
 }
 
+pub fn prepare_bots(bot_constructors: &[BotConstructor]) -> Vec<Box<dyn Bot>> {
+    let mut rand = rand::rng();
+    let botcount = bot_constructors.len();
+
+    let idx1 = rand.random_range(0..botcount);
+    let mut idx2 = rand.random_range(0..botcount);
+    while idx2 == idx1 {
+        idx2 = rand.random_range(0..botcount);
+    }
+    // pick two bots at random
+    let bot1 = bot_constructors[idx1]();
+    let bot2 = bot_constructors[idx2]();
+
+    vec![bot1, bot2]
+}
+
 /// Run a game between two bots
 /// The bots must already be instantiated and ready to play.
-fn run_game(bots: Vec<Box<dyn Bot>>) -> Vec<Score> {
+pub fn run_game(bots: Vec<Box<dyn Bot>>) -> Vec<Score> {
     // Implement the game logic here
     let botnames = bots.iter().map(|bot| bot.name()).collect::<Vec<_>>();
     // Bots zijn al vers, geen clone nodig
