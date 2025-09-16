@@ -194,8 +194,9 @@ impl Map {
     /// remove a bomb from a certain location.
     pub fn remove_bomb(&mut self, position: Coord) {
         // Remove a bomb at the given position
-        self.set_cell(position, CellType::Empty);
-        self.bombs.retain(|bomb| bomb.position != position);
+        if let Some(pos) = self.bombs.iter().position(|b| b.position == position) {
+            self.bombs.swap_remove(pos);
+        }
     }
 
     pub fn bomb_timer_decrease(&mut self) {
