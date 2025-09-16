@@ -102,14 +102,15 @@ pub fn run_tournament(
 }
 
 pub fn prepare_bots(bot_constructors: &[BotConstructor]) -> Vec<Box<dyn Bot>> {
+
     let mut rand = rand::rng();
     let botcount = bot_constructors.len();
 
-    let idx1 = rand.random_range(0..botcount);
-    let mut idx2 = rand.random_range(0..botcount);
-    while idx2 == idx1 {
-        idx2 = rand.random_range(0..botcount);
-    }
+    let mut indices: Vec<usize> = (0..botcount).collect();
+    indices.shuffle(&mut rand);
+    let idx1 = indices[0];
+    let idx2 = indices[1];
+
     // pick two bots at random
     let bot1 = bot_constructors[idx1]();
     let bot2 = bot_constructors[idx2]();
