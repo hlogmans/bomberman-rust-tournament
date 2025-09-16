@@ -14,5 +14,9 @@ criterion = "0.7"
 name = "tournament_benchmark"
 harness = false
 
+[[bench]]
+name = "perform_move_benchmark"
+harness = false
+
 [profile.release]
 lto = true
