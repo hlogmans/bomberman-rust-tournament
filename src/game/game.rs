@@ -1,9 +1,9 @@
 use crate::map::cell::CellType;
 use rand::seq::SliceRandom;
+use crate::game::process_explosion::ExplosionSystem;
 
 use crate::{
     bot::Bot,
-    coord::Coord,
     game::{game_progress::GameProgress, game_result::GameResult},
     map::map::{Command, ConsoleDisplay, Map, MapDisplay},
     shrink::calculate_shrink_location,
@@ -232,187 +232,13 @@ impl Game {
         false
     }
 
-    fn bomb_explosion_locations(&self, location: Coord) -> Vec<Coord> {
-        let mut locations = vec![location];
-
-        let directions = [
-            |c: Coord| c.move_up(),
-            |c: Coord| c.move_down(),
-            |c: Coord| c.move_left(),
-            |c: Coord| c.move_right(),
-        ];
-
-        // Iterate over each direction and extend the explosion
-        for direction in directions.iter() {
-            let mut current_loc = Some(location);
-            for _ in 1..=self.map.map_settings.bomb_radius {
-                current_loc = current_loc.and_then(direction);
-
-                if let Some(loc) = current_loc {
-                    let cell_type = self.map.cell_type(loc);
-
-                    match cell_type {
-                        // A wall stops the explosion completely in this direction.
-                        CellType::Wall => {
-                            break;
-                        }
-                        // A destructible block stops the explosion, but is still destroyed.
-                        // So we add its location and then stop.
-                        CellType::Destroyable => {
-                            locations.push(loc);
-                            break;
-                        }
-                        // Empty space, a player, or a bomb will be affected, and the explosion continues.
-                        _ => {
-                            locations.push(loc);
-                        }
-                    }
-                } else {
-                    break;
-                }
-            }
-        }
-
-        locations
-    }
-
     /// process the bombs. If there is a winner, return true. Then not all bombs might have been processed.
     /// It stops immediately if a winner is found.
     fn process_bombs(&mut self, _logging_callback: &Option<&mut dyn FnMut(String)>) -> bool {
-        self.map.bomb_timer_decrease();
-        let exploding_bombs = self.map.get_exploding_bombs();
-
-        for bomb in exploding_bombs {
-            self.map.remove_bomb(bomb);
-            let explosion_locations = self.bomb_explosion_locations(bomb);
-
-            for location in explosion_locations {
-                self.map.clear_destructable(location);
-
-                // Check if there is a player at this location, there can only be one
-                if let Some(player_index) = self.map.get_player_index_at_location(location) {
-                    // Remove the player from the game
-                    self.alive_players.retain(|&x| x != player_index);
-
-                    // Check if there is a winner
-                    if self.check_winner() {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        false
+        ExplosionSystem::process(&mut self.map, &mut self.alive_players)
     }
 
     pub fn display(&self) {
         self.display.display(&self.map);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::map::structs::map_config::MapConfig;
-    use super::*;
-
-    fn setup_game(width: usize, height: usize) -> Game {
-
-        let map_settings = MapConfig {
-            width,
-            height,
-            ..Default::default()
-        };
-
-        Game {
-            map: Map::create(
-                map_settings
-            ),
-            bots: vec![],
-            player_count: 2,
-            turn: 0,
-            player_actions: vec![],
-            winner: None,
-            alive_players: vec![],
-            display: Box::new(ConsoleDisplay),
-        }
-    }
-
-    #[test]
-    fn test_bomb_explosion_center_clear_path() {
-        let mut game = setup_game(7, 7);
-        let loc = Coord::from(3, 3);
-
-        game.map.clear_destructable(Coord::from(3, 3));
-        game.map.clear_destructable(Coord::from(2, 3)); // up
-        game.map.clear_destructable(Coord::from(4, 3)); // down
-        game.map.clear_destructable(Coord::from(3, 2)); // left
-        game.map.clear_destructable(Coord::from(3, 4)); // right
-
-        let result = game.bomb_explosion_locations(loc);
-
-        let expected = vec![
-            Coord::from(3, 3), // center
-            Coord::from(2, 3),
-            Coord::from(3, 2), // up
-            Coord::from(4, 3),
-            Coord::from(3, 4), // down
-            Coord::from(1, 3),
-            Coord::from(3, 1), // left
-            Coord::from(5, 3),
-            Coord::from(3, 5), // right
-        ];
-
-        assert_eq!(result.len(), expected.len());
-
-        for coord in expected {
-            assert_eq!(result.contains(&coord), true);
-        }
-    }
-
-    #[test]
-    fn test_bomb_explosion_corner() {
-        let game = setup_game(5, 5);
-
-        let loc = Coord::from(1, 1);
-        let result = game.bomb_explosion_locations(loc);
-        let expected = vec![
-            Coord::from(1, 1),
-            Coord::from(1, 2),
-            Coord::from(1, 3),
-            Coord::from(2, 1),
-            Coord::from(3, 1),
-        ];
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_bomb_explosion_corner_with_destructable() {
-        let game = setup_game(5, 5);
-        let loc = Coord::from(3, 3);
-
-        let result = game.bomb_explosion_locations(loc);
-        let expected = vec![
-            Coord::from(3, 3),
-            Coord::from(3, 2),
-            //Coord::from(3, 1), Can't be destroyed there is a destrutable in the way at 3,2
-            Coord::from(2, 3),
-            Coord::from(1, 3),
-        ];
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_bomb_explosion_range_1() {
-        let game = setup_game(5, 5);
-        let loc = Coord::from(2, 2);
-        let result = game.bomb_explosion_locations(loc);
-        let expected = vec![
-            Coord::from(2, 2),
-            Coord::from(2, 1),
-            Coord::from(2, 3),
-            Coord::from(1, 2),
-            Coord::from(3, 2),
-        ];
-        assert_eq!(result, expected);
     }
 }

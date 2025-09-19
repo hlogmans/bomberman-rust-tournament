@@ -46,7 +46,7 @@ impl fmt::Debug for Coord {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct Coord {
     pub col: Col,
     pub row: Row,
