@@ -279,38 +279,18 @@ impl Game {
     /// process the bombs. If there is a winner, return true. Then not all bombs might have been processed.
     /// It stops immediately if a winner is found.
     fn process_bombs(&mut self, _logging_callback: &Option<&mut dyn FnMut(String)>) -> bool {
-        // step one: check for all bombs that have 1 round left, those will explode this turn
-        // changed to a while loop
-
-        // step two: for each bomb that explodes, check the surrounding cells and destroy them if they are destructible
-        // for each bomb that explodes, check for each exploding field if there is a player on it, if so, remove the player from the game
-        // and check if only one player is left, if so, set the winner to that player.
-        // if an exploding field is a bomb, remove it from the map (it won't explode, even if it should explode now).
-
-        // remove 1 from all the bomb timers
         self.map.bomb_timer_decrease();
+        let exploding_bombs = self.map.get_exploding_bombs();
 
-        // step 2a: check the bomb location to destroy destructible fields
-        while let Some(bomb) = self.map.get_next_exploding_bomb_location() {
+        for bomb in exploding_bombs {
             self.map.remove_bomb(bomb);
             let explosion_locations = self.bomb_explosion_locations(bomb);
-            for location in explosion_locations {
-                // Check if the location is destructible
-                // first just remove any destructible field at this location
-                self.map.clear_destructable(location);
 
-                // clear any bomb at this location
-                // if so, it might also need to be removed from the current boms_to_explode list.
+            for location in explosion_locations {
+                self.map.clear_destructable(location);
 
                 // Check if there is a player at this location, there can only be one
                 if let Some(player_index) = self.map.get_player_index_at_location(location) {
-                    // if let Some(cb) = logging_callback {
-                    //     cb(format!(
-                    //         "Player {} has been hit by a bomb at location {:?}",
-                    //         player_index, location
-                    //     ));
-                    // }
-
                     // Remove the player from the game
                     self.alive_players.retain(|&x| x != player_index);
 
@@ -321,9 +301,8 @@ impl Game {
                 }
             }
         }
-        false
 
-        // step three: decrease the timer of all bombs by 1, and remove those that have a timer of 0
+        false
     }
 
     pub fn display(&self) {

@@ -165,17 +165,14 @@ impl Map {
         self.bombs.push(Bomb { position, timer });
     }
 
-    /// Get the next bomb to explode from the list, if any. Use this method because processing the
-    /// bombs could change the list of bombs.
-    pub fn get_next_exploding_bomb_location(&self) -> Option<Coord> {
-        // Get the next bomb that is about to explode, if any
-        for bomb in &self.bombs {
-            if bomb.timer == 0 {
-                return Some(bomb.position);
-            }
-        }
-        None
+    pub fn get_exploding_bombs(&self) -> Vec<Coord> {
+        self.bombs
+            .iter()
+            .filter(|bomb| bomb.timer == 0)
+            .map(|bomb| bomb.position)
+            .collect()
     }
+
 
     /// remove a bomb from a certain location.
     pub fn remove_bomb(&mut self, position: Coord) {
@@ -222,7 +219,7 @@ impl Map {
         if !Map::validate_move(self, player, &command) {
             return false; // Invalid move, do not perform it
         }
-        
+
         let command: Box<dyn PlayerCommand> = match command {
             Command::Up => Box::new(MoveUp),
             Command::Down => Box::new(MoveDown),
