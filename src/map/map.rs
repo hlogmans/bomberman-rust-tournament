@@ -4,15 +4,14 @@ use crate::coord::Col;
 use crate::coord::Coord;
 use crate::coord::Row;
 use crate::coord::ValidCoord;
-use crate::game::map_settings::MapSettings;
 use crate::map::bomb::Bomb;
 use crate::map::cell::CellType;
 use crate::map::player::Player;
-use crate::map::exceptions::map_build_error::MapBuildError;
+use crate::map::structs::map_config::MapConfig;
 
 // a map is a 2D vector of characters. But also contains a list of players and a turn number.
 pub struct Map {
-    pub map_settings: MapSettings,
+    pub map_settings: MapConfig,
     pub grid: Vec<char>,
     pub height: usize,
     pub width: usize,
@@ -20,15 +19,17 @@ pub struct Map {
     // the turn number, starts at 0 and increments every turn. One turn is everybody making a move.
     pub bombs: Vec<Bomb>, // List of bombs on the map
 }
+
+
 impl Map {
     pub fn create(
-        width: usize,
-        height: usize,
-        playernames: Vec<String>,
-        map_settings: MapSettings,
+        config: MapConfig
     ) -> Self {
+        let width = config.width;
+        let height = config.height;
+
         // at least 2 players, at most 4 players
-        if playernames.len() < 2 || playernames.len() > 4 {
+        if config.player_names.len() < 2 || config.player_names.len() > 4 {
             panic!("Invalid number of players: must be between 2 and 4");
         }
 
@@ -59,11 +60,11 @@ impl Map {
         let grid = prepare_grid(width, height);
 
         let mut map = Map {
-            map_settings,
+            map_settings: config.clone(),
             grid,
             width,
             height,
-            players: playernames
+            players: config.player_names
                 .iter()
                 .cloned()
                 .zip(player_locations.iter().cloned())
@@ -171,7 +172,7 @@ impl Map {
             return; // A bomb already exists at this position, do not add another
         }
         // Add a bomb at the given position with the map_settings bomb timer
-        let timer = self.map_settings.bombtimer;
+        let timer = self.map_settings.bomb_timer;
         self.bombs.push(Bomb { position, timer });
     }
 

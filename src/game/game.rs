@@ -4,10 +4,12 @@ use rand::seq::SliceRandom;
 use crate::{
     bot::Bot,
     coord::Coord,
-    game::{game_progress::GameProgress, game_result::GameResult, map_settings::MapSettings},
+    game::{game_progress::GameProgress, game_result::GameResult},
     map::map::{Command, ConsoleDisplay, Map, MapDisplay},
     shrink::calculate_shrink_location,
 };
+
+use crate::map::structs::map_config::MapConfig;
 
 pub struct Game {
     pub map: Map,
@@ -52,20 +54,17 @@ impl Game {
     fn new(width: usize, height: usize, players: Vec<Box<dyn Bot>>) -> Self {
         let player_count = players.len();
 
-        let map_settings = MapSettings {
-            bombtimer: 4,
-            bombradius: 3,
+        let map_settings = MapConfig {
+            bomb_timer: 4,
+            bomb_radius: 3,
             endgame: 500,
             width,
             height,
-            playernames: Vec::new(),
+            player_names: players.iter().map(|bot| bot.name().to_string()).collect(),
         };
 
         let map = Map::create(
-            width,
-            height,
-            players.iter().map(|bot| bot.name().to_string()).collect(),
-            map_settings.clone(),
+            map_settings
         );
 
         //let endgame = map_settings.endgame;
@@ -246,7 +245,7 @@ impl Game {
         // Iterate over each direction and extend the explosion
         for direction in directions.iter() {
             let mut current_loc = Some(location);
-            for _ in 1..=self.map.map_settings.bombradius {
+            for _ in 1..=self.map.map_settings.bomb_radius {
                 current_loc = current_loc.and_then(direction);
 
                 if let Some(loc) = current_loc {
@@ -334,15 +333,20 @@ impl Game {
 
 #[cfg(test)]
 mod tests {
+    use crate::map::structs::map_config::MapConfig;
     use super::*;
 
     fn setup_game(width: usize, height: usize) -> Game {
+
+        let map_settings = MapConfig {
+            width,
+            height,
+            ..Default::default()
+        };
+
         Game {
             map: Map::create(
-                width,
-                height,
-                vec!["A".to_string(), "B".to_string()],
-                MapSettings::default(),
+                map_settings
             ),
             bots: vec![],
             player_count: 2,

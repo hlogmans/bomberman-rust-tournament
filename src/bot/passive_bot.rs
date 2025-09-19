@@ -1,15 +1,16 @@
 use crate::{
     bot::Bot,
     coord::Coord,
-    game::map_settings::MapSettings,
     map::map::{Command, Map},
 };
+
+use crate::map::structs::map_config::MapConfig;
 
 #[derive(Clone)]
 pub struct PassiveBot {
     name: String,
     id: usize,
-    map_settings: MapSettings,
+    map_settings: MapConfig,
 }
 
 impl Default for PassiveBot {
@@ -23,7 +24,7 @@ impl PassiveBot {
         PassiveBot {
             name: String::from("PassiveBot"),
             id: 0,
-            map_settings: MapSettings::default(),
+            map_settings: MapConfig::default(),
         }
     }
 
@@ -31,7 +32,7 @@ impl PassiveBot {
     fn is_danger(&self, map: &Map, loc: Coord) -> bool {
         map.bombs
             .iter()
-            .filter(|b| b.timer <= self.map_settings.bombtimer) //now all can be changed later
+            .filter(|b| b.timer <= self.map_settings.bomb_timer) //now all can be changed later
             .any(|b| {
                 let same_row = b.position.row.get() == loc.row.get();
                 let same_col = b.position.col.get() == loc.col.get();
@@ -40,8 +41,8 @@ impl PassiveBot {
                 let col_dist =
                     (b.position.col.get() as i32 - loc.col.get() as i32).unsigned_abs() as usize;
 
-                (same_row && col_dist <= self.map_settings.bombradius + 2)
-                    || (same_col && row_dist <= self.map_settings.bombradius + 2) //bombs scary stay even 2 more tiles away than blast
+                (same_row && col_dist <= self.map_settings.bomb_radius + 2)
+                    || (same_col && row_dist <= self.map_settings.bomb_radius + 2) //bombs scary stay even 2 more tiles away than blast
             })
     }
 
@@ -91,7 +92,7 @@ impl Bot for PassiveBot {
         format!("{} ({})", self.name, self.id)
     }
 
-    fn start_game(&mut self, settings: &MapSettings, bot_id: usize) -> bool {
+    fn start_game(&mut self, settings: &MapConfig, bot_id: usize) -> bool {
         self.id = bot_id;
         self.map_settings = settings.clone();
         true

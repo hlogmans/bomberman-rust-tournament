@@ -1,9 +1,9 @@
 use crate::{
     bot::Bot,
     coord::Coord,
-    game::map_settings::MapSettings,
     map::map::{Command, Map},
 };
+use crate::map::structs::map_config::MapConfig;
 
 #[derive(Clone)]
 pub struct RandomBot {
@@ -34,7 +34,7 @@ impl Bot for RandomBot {
         commands[rng.random_range(0..commands.len())]
     }
 
-    fn start_game(&mut self, _: &MapSettings, bot_id: usize) -> bool {
+    fn start_game(&mut self, _: &MapConfig, bot_id: usize) -> bool {
         self.id = bot_id;
         true
     }

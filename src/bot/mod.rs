@@ -14,8 +14,8 @@ include!(concat!(env!("OUT_DIR"), "/bot_registry.rs"));
 include_bot_modules!();
 
 use crate::coord::Coord;
-use crate::game::map_settings::MapSettings;
 use crate::map::map::{Command, Map};
+use crate::map::structs::map_config::MapConfig;
 
 /// Represents a bot that can play the game.
 /// The tournament is a competition where bots compete against each other.
@@ -27,7 +27,7 @@ use crate::map::map::{Command, Map};
 pub trait Bot {
     fn name(&self) -> String;
 
-    fn start_game(&mut self, map_settings: &MapSettings, bot_id: usize) -> bool;
+    fn start_game(&mut self, map_settings: &MapConfig, bot_id: usize) -> bool;
 
     fn get_move(&mut self, map: &Map, player_location: Coord) -> Command;
 }
@@ -99,7 +99,7 @@ mod tests {
             assert!(!name.is_empty(), "Bot {} should have a non-empty name", i);
 
             // Test that start_game can be called
-            let map_settings = MapSettings::default();
+            let map_settings = MapConfig::default();
             let _result = bot.start_game(&map_settings, 0);
         }
     }

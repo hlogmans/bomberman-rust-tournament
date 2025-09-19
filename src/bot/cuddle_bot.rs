@@ -3,14 +3,14 @@ use rand::Rng;
 use crate::{
     bot::Bot,
     coord::Coord,
-    game::map_settings::MapSettings,
     map::map::{Command, Map},
 };
+use crate::map::structs::map_config::MapConfig;
 
 pub struct CuddleBot {
     name: String,
     id: usize,
-    map_settings: MapSettings,
+    map_settings: MapConfig,
 }
 
 impl Default for CuddleBot {
@@ -24,7 +24,7 @@ impl CuddleBot {
         CuddleBot {
             name: "CuddleBot".to_string(),
             id: 0,
-            map_settings: MapSettings::default(),
+            map_settings: MapConfig::default(),
         }
     }
 
@@ -75,8 +75,8 @@ impl CuddleBot {
             let col_dist =
                 (bomb.position.col.get() as i32 - locaction.col.get() as i32).unsigned_abs() as usize;
 
-            (same_row && col_dist <= self.map_settings.bombradius + 5)
-                || (same_col && row_dist <= self.map_settings.bombradius + 5)
+            (same_row && col_dist <= self.map_settings.bomb_radius + 5)
+                || (same_col && row_dist <= self.map_settings.bomb_radius + 5)
         })
     }
 
@@ -111,8 +111,8 @@ impl CuddleBot {
                     (player.position.row.get() as i32 - locaction.row.get() as i32).unsigned_abs() as usize;
                 let col_dist =
                     (player.position.col.get() as i32 - locaction.col.get() as i32).unsigned_abs() as usize;
-                (same_row && col_dist >= self.map_settings.bombradius)
-                    || (same_col && row_dist >= self.map_settings.bombradius)
+                (same_row && col_dist >= self.map_settings.bomb_radius)
+                    || (same_col && row_dist >= self.map_settings.bomb_radius)
             })
     }
 
@@ -129,7 +129,7 @@ impl Bot for CuddleBot {
         format!("{} ({})", self.name, self.id)
     }
 
-    fn start_game(&mut self, settings: &MapSettings, bot_id: usize) -> bool {
+    fn start_game(&mut self, settings: &MapConfig, bot_id: usize) -> bool {
         self.id = bot_id;
         self.map_settings = settings.clone();
         false

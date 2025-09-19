@@ -2,9 +2,10 @@ use std::collections::VecDeque;
 use crate::{
     bot::Bot,
     coord::Coord,
-    game::map_settings::MapSettings,
     map::map::{Command, Map},
 };
+
+use crate::map::structs::map_config::MapConfig;
 use crate::shrink::calculate_shrink_location;
 
 #[derive(Clone)]
@@ -21,7 +22,7 @@ struct Node {
 pub struct MlBot {
     pub name: String,
     pub id: usize,
-    map_settings: MapSettings,
+    map_settings: MapConfig,
     turn: usize,
     next_shrink_location: Option<Coord>,
 }
@@ -31,7 +32,7 @@ impl MlBot {
         MlBot {
             name: "MartijnBot".to_string(),
             id: 0,
-            map_settings: MapSettings::default(),
+            map_settings: MapConfig::default(),
             turn: 0,
             next_shrink_location: None,
         }
@@ -88,7 +89,7 @@ impl MlBot {
             heatmap[self.idx(bomb_row, bomb_col)] = bomb_heat;
 
             for &(delta_row, delta_col) in &[(-1, 0), (1, 0), (0, -1), (0, 1)] {
-                for distance in 1..=self.map_settings.bombradius {
+                for distance in 1..=self.map_settings.bomb_radius {
                     let new_row = (bomb_row as isize + delta_row * distance as isize) as usize;
                     let new_col = (bomb_col as isize + delta_col * distance as isize) as usize;
 
@@ -224,7 +225,7 @@ impl MlBot {
         simulated_heatmap[self.idx(pos_row, pos_col)] = bomb_heat;
 
         for &(dr, dc) in &[(-1,0),(1,0),(0,-1),(0,1)] {
-            for distance in 1..=self.map_settings.bombradius {
+            for distance in 1..=self.map_settings.bomb_radius {
                 let nr_isize = pos_row as isize + dr * distance as isize;
                 let nc_isize = pos_col as isize + dc * distance as isize;
 
@@ -351,7 +352,7 @@ impl MlBot {
             .get(self.idx(row, col))
             .expect("Out of bounds")
     }
-    
+
     #[inline(always)]
     fn idx(&self, row: usize, col: usize) -> usize {
         row * self.map_settings.width + col
@@ -368,7 +369,7 @@ impl Bot for MlBot {
         format!("{} ({})", self.name, self.id)
     }
 
-    fn start_game(&mut self, settings: &MapSettings, bot_id: usize) -> bool {
+    fn start_game(&mut self, settings: &MapConfig, bot_id: usize) -> bool {
         self.id = bot_id;
         self.map_settings = settings.clone();
         true

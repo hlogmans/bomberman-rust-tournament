@@ -1,12 +1,12 @@
+use crate::map::structs::map_config::MapConfig;
 use crate::game::game::Game;
-use crate::game::map_settings::MapSettings;
 use crate::map::map::Command;
 
 /// Represents the result of a game.
 pub struct GameResult {
     pub winner: String,
     pub replay_data: Vec<Command>,
-    pub game_settings: MapSettings,
+    pub game_settings: MapConfig,
     pub rounds: usize,
 }
 

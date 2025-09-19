@@ -2,15 +2,16 @@ use crate::bot::passive_bot::PassiveBot;
 use crate::{
     bot::Bot,
     coord::Coord,
-    game::map_settings::MapSettings,
     map::map::{Command, Map},
 };
+
+use crate::map::structs::map_config::MapConfig;
 
 #[derive(Clone)]
 pub struct ScoutBot {
     pub name: String,
     pub id: usize,
-    map_settings: MapSettings,
+    map_settings: MapConfig,
     passive_bot: PassiveBot,
     command_list: Vec<Command>,
     current_index: usize,
@@ -29,7 +30,7 @@ impl ScoutBot {
         ScoutBot {
             name: "ScoutBot".to_string(),
             id: 0,
-            map_settings: MapSettings::default(),
+            map_settings: MapConfig::default(),
             passive_bot: PassiveBot::new(),
             command_list: vec![],
             current_index: 0,
@@ -139,7 +140,7 @@ impl Bot for ScoutBot {
         format!("{} ({})", self.name, self.id)
     }
 
-    fn start_game(&mut self, settings: &MapSettings, bot_id: usize) -> bool {
+    fn start_game(&mut self, settings: &MapConfig, bot_id: usize) -> bool {
         self.id = bot_id;
         self.map_settings = settings.clone();
         true

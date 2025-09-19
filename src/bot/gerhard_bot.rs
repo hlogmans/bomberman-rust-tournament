@@ -3,14 +3,15 @@ use rand::Rng;
 use crate::{
     bot::Bot,
     coord::Coord,
-    game::map_settings::MapSettings,
     map::map::{Command, Map},
 };
+
+use crate::map::structs::map_config::MapConfig;
 
 pub struct GerhardBot {
     name: String,
     id: usize,
-    map_settings: MapSettings,
+    map_settings: MapConfig,
 }
 
 impl Default for GerhardBot {
@@ -24,7 +25,7 @@ impl GerhardBot {
         GerhardBot {
             name: "GerhardBot".to_string(),
             id: 0,
-            map_settings: MapSettings::default(),
+            map_settings: MapConfig::default(),
         }
     }
 
@@ -75,8 +76,8 @@ impl GerhardBot {
             let col_dist =
                 (bomb.position.col.get() as i32 - locaction.col.get() as i32).unsigned_abs() as usize;
 
-            (same_row && col_dist <= self.map_settings.bombradius + 5)
-                || (same_col && row_dist <= self.map_settings.bombradius + 5)
+            (same_row && col_dist <= self.map_settings.bomb_radius + 5)
+                || (same_col && row_dist <= self.map_settings.bomb_radius + 5)
         })
     }
 }
@@ -86,7 +87,7 @@ impl Bot for GerhardBot {
         format!("{} ({})", self.name, self.id)
     }
 
-    fn start_game(&mut self, settings: &MapSettings, bot_id: usize) -> bool {
+    fn start_game(&mut self, settings: &MapConfig, bot_id: usize) -> bool {
         self.id = bot_id;
         self.map_settings = settings.clone();
         false

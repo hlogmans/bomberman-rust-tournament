@@ -1,9 +1,10 @@
 use crate::{
     bot::Bot,
     coord::Coord,
-    game::map_settings::MapSettings,
     map::map::{Command, Map},
 };
+
+use crate::map::structs::map_config::MapConfig;
 
 #[derive(Clone)]
 pub struct EasyBot {
@@ -11,7 +12,7 @@ pub struct EasyBot {
     pub id: usize,
 
     nextmoves: Vec<Command>,
-    map_settings: MapSettings,
+    map_settings: MapConfig,
 }
 
 impl Bot for EasyBot {
@@ -50,7 +51,7 @@ impl Bot for EasyBot {
         commands[rng.random_range(0..commands.len())]
     }
 
-    fn start_game(&mut self, map_settings: &MapSettings, bot_id: usize) -> bool {
+    fn start_game(&mut self, map_settings: &MapConfig, bot_id: usize) -> bool {
         self.id = bot_id;
         self.map_settings = map_settings.clone();
         true
@@ -92,7 +93,7 @@ impl EasyBot {
             name: "EasyBot".to_string(),
             id: 0,
             nextmoves: Vec::new(),
-            map_settings: MapSettings::default(),
+            map_settings: MapConfig::default(),
         }
     }
 
@@ -134,7 +135,7 @@ impl EasyBot {
     fn danger_location(&self, map: &Map, player_location: Coord) -> Option<Command> {
         // is there a bomb that will hit the current location?
         for bomb in map.bombs.iter().map(|bomb| &bomb.position) {
-            if player_location.in_bomb_range(bomb, self.map_settings.bombradius as u32) {
+            if player_location.in_bomb_range(bomb, self.map_settings.bomb_radius as u32) {
                 return Some(Command::Left); // <-- this is plain stupid of course, but alas no problem for v1
             }
         }
