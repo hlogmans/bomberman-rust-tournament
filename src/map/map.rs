@@ -1,3 +1,11 @@
+use crate::map::commands::move_down::MoveDown;
+use crate::map::commands::move_left::MoveLeft;
+use crate::map::commands::move_right::MoveRight;
+use crate::map::commands::move_up::MoveUp;
+use crate::map::commands::place_bomb::PlaceBomb;
+use crate::map::commands::traits::player_command::PlayerCommand;
+use crate::map::commands::wait::Wait;
+
 pub use crate::map::display::*;
 
 use crate::coord::Col;
@@ -90,7 +98,7 @@ impl Map {
         }
     }
 
-    fn set_cell(&mut self, position: Coord, cell_type: CellType) {
+    pub(super) fn set_cell(&mut self, position: Coord, cell_type: CellType) {
         if position.is_valid(self.width, self.height) {
             let char = match cell_type {
                 CellType::Empty => ' ',
@@ -133,11 +141,11 @@ impl Map {
         self.players.get(no).map(|p| p.name.clone())
     }
 
-    fn get_player_position(&self, no: usize) -> Option<Coord> {
+    pub(super) fn get_player_position(&self, no: usize) -> Option<Coord> {
         self.get_player(no).map(|p| p.position)
     }
 
-    fn set_player_position(&mut self, no: usize, new_position: Coord) {
+    pub(super) fn set_player_position(&mut self, no: usize, new_position: Coord) {
         // Find the player and update their position
         if let Some(player) = self.get_player_mut(no) {
             player.position = new_position;
@@ -147,7 +155,7 @@ impl Map {
         // For now, we do nothing
     }
 
-    fn add_bomb(&mut self, position: Coord) {
+    pub(super) fn add_bomb(&mut self, position: Coord) {
         // if there is no bomb yet at this position, add a bomb
         if self.bombs.iter().any(|bomb| bomb.position == position) {
             return; // A bomb already exists at this position, do not add another
@@ -214,34 +222,17 @@ impl Map {
         if !Map::validate_move(self, player, &command) {
             return false; // Invalid move, do not perform it
         }
-
-        let player_position = match self.get_player_position(player) {
-            Some(p) => p,
-            None => return false, // Player does not exist
+        
+        let command: Box<dyn PlayerCommand> = match command {
+            Command::Up => Box::new(MoveUp),
+            Command::Down => Box::new(MoveDown),
+            Command::Left => Box::new(MoveLeft),
+            Command::Right => Box::new(MoveRight),
+            Command::PlaceBomb => Box::new(PlaceBomb),
+            Command::Wait => Box::new(Wait),
         };
 
-        match command {
-            Command::PlaceBomb => {
-                self.set_cell(player_position, CellType::Bomb);
-                self.add_bomb(player_position);
-            }
-            Command::Wait => {
-                return false; // No movement, just return
-            }
-            _ => {
-                // clear the old position (will be filled again after wrapping up the map)
-                // don't clear if it's a bomb because this makes the bomb disappear visually
-                if self.cell_type(player_position) != CellType::Bomb {
-                    self.set_cell(player_position, CellType::Empty);
-                }
-
-                if let Some(c) = new_position(player_position, &command) {
-                    self.set_cell(c, CellType::Player);
-                    self.set_player_position(player, c);
-                };
-            }
-        }
-
+        command.execute(self, player);
         true
     }
 

@@ -5,3 +5,4 @@ pub mod player;
 pub mod map;
 pub mod structs;
 pub mod validators;
+pub mod commands;
