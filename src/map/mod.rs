@@ -11,7 +11,6 @@ pub use player::*;
 use crate::coord::Col;
 use crate::coord::Coord;
 use crate::coord::Row;
-use crate::coord::ValidCoord;
 use crate::game::map_settings::MapSettings;
 
 // a map is a 2D vector of characters. But also contains a list of players and a turn number.
@@ -195,8 +194,9 @@ impl Map {
     /// remove a bomb from a certain location.
     pub fn remove_bomb(&mut self, position: Coord) {
         // Remove a bomb at the given position
-        self.set_cell(position, CellType::Empty);
-        self.bombs.retain(|bomb| bomb.position != position);
+        if let Some(pos) = self.bombs.iter().position(|b| b.position == position) {
+            self.bombs.swap_remove(pos);
+        }
     }
 
     pub fn bomb_timer_decrease(&mut self) {
@@ -210,14 +210,7 @@ impl Map {
 
     // part one: the server must validate the move on a map.
     // the outer edges are always walls, so they cannot be moved to.
-    fn validate_move(map: &Map, player_index: usize, command: &Command) -> bool {
-        // Calculate the new position based on the command
-        let player_position = match map.get_player_position(player_index) {
-            Some(p) => p,
-            None => return false, // Player does not exist
-        };
-        let new_position = new_position(player_position, command).valid(map.width, map.height);
-
+    fn validate_move(map: &Map, new_position: Option<Coord>, command: &Command) -> bool {
         // Ensure the new position is within the bounds of the map
         if let Some(coord) = new_position {
             // Check if the new position is a wall or occupied by another player
@@ -233,15 +226,17 @@ impl Map {
     // update the map by performing the move, everything is validated before this is called.
     // false is called if some error occurs, like player not found or invalid move.
     pub fn perform_move(&mut self, player: usize, command: Command) -> bool {
-        // Validate the command before performing the move
-        if !Map::validate_move(self, player, &command) {
-            return false; // Invalid move, do not perform it
-        }
-
         let player_position = match self.get_player_position(player) {
             Some(p) => p,
             None => return false, // Player does not exist
         };
+
+        let new_position = new_position(player_position, &command);
+
+        // Validate the command before performing the move
+        if !Map::validate_move(self, new_position, &command) {
+            return false; // Invalid move, do not perform it
+        }
 
         match command {
             Command::PlaceBomb => {
@@ -258,7 +253,7 @@ impl Map {
                     self.set_cell(player_position, CellType::Empty);
                 }
 
-                if let Some(c) = new_position(player_position, &command) {
+                if let Some(c) = new_position {
                     self.set_cell(c, CellType::Player);
                     self.set_player_position(player, c);
                 };
