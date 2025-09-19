@@ -8,6 +8,7 @@ use crate::map::bomb::Bomb;
 use crate::map::cell::CellType;
 use crate::map::player::Player;
 use crate::map::structs::map_config::MapConfig;
+use crate::map::validators::map_validator_chain_factory::MapValidatorChainFactory;
 
 // a map is a 2D vector of characters. But also contains a list of players and a turn number.
 pub struct Map {
@@ -22,32 +23,12 @@ pub struct Map {
 
 
 impl Map {
-    pub fn create(
-        config: MapConfig
-    ) -> Self {
+    pub fn create(config: MapConfig) -> Self {
         let width = config.width;
         let height = config.height;
 
-        // at least 2 players, at most 4 players
-        if config.player_names.len() < 2 || config.player_names.len() > 4 {
-            panic!("Invalid number of players: must be between 2 and 4");
-        }
+        MapValidatorChainFactory::validate(&config).expect("Map validation failed");
 
-        // at least 5x5 map, at most 20x20 map, and both dimensions must be odd
-        if width < 5 || height < 5 || width > 20 || height > 20 || width % 2 == 0 || height % 2 == 0
-        {
-            panic!(
-                "Invalid map size: must be between 5x5 and 20x20 and both dimensions must be odd"
-            );
-        }
-
-        // players are placed on the map the one one of four random positions, as long as they are not on a wall.
-        // The four positions are: (1, 1), (1, width - 2), (height - 2, 1), (height - 2, width - 2)
-        // These positions are chosen to be on the edges of the map, but not on the corners, to ensure they are not walls.
-        // The players will be placed in the order they are given in the playernames vector.
-        // The first player will be placed at (1, 1), the second player at (1, width - 2),
-        // the third player at (height - 2, 1), and the fourth player at (height - 2, width - 2).
-        // If there are less than 4 players, the remaining positions will not be used.
         let player_locations = [
             Coord::new(Col::new(1), Row::new(1)),
             Coord::new(Col::new(1), Row::new(width - 2)),
