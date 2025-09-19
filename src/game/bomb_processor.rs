@@ -1,9 +1,9 @@
 use crate::coord::Coord;
 use crate::map::cell::CellType;
 use crate::map::map::Map;
-pub(super) struct ExplosionSystem;
+pub(super) struct BombProcessor;
 
-impl ExplosionSystem {
+impl BombProcessor {
     pub(super) fn process(map: &mut Map, alive_players: &mut Vec<usize>) -> bool {
         map.bomb_timer_decrease();
 
@@ -103,7 +103,7 @@ mod tests {
         map.clear_destructable(Coord::from(3, 2)); // left
         map.clear_destructable(Coord::from(3, 4)); // right
 
-        let result = ExplosionSystem::bomb_explosion_locations(Coord::from(3, 3), map);
+        let result = BombProcessor::bomb_explosion_locations(Coord::from(3, 3), map);
 
         let expected = vec![
             Coord::from(3, 3), // center
@@ -133,7 +133,7 @@ mod tests {
         };
         let map = &mut Map::create(map_settings);
 
-        let result = ExplosionSystem::bomb_explosion_locations( Coord::from(1, 1), map);
+        let result = BombProcessor::bomb_explosion_locations(Coord::from(1, 1), map);
 
         let expected = vec![
             Coord::from(1, 1),
@@ -154,7 +154,7 @@ mod tests {
         };
         let map = &mut Map::create(map_settings);
 
-        let result = ExplosionSystem::bomb_explosion_locations( Coord::from(3, 3), map);
+        let result = BombProcessor::bomb_explosion_locations(Coord::from(3, 3), map);
 
         let expected = vec![
             Coord::from(3, 3),
@@ -175,7 +175,7 @@ mod tests {
         };
         let map = &mut Map::create(map_settings);
 
-        let result = ExplosionSystem::bomb_explosion_locations( Coord::from(2, 2), map);
+        let result = BombProcessor::bomb_explosion_locations(Coord::from(2, 2), map);
 
         let expected = vec![
             Coord::from(2, 2),

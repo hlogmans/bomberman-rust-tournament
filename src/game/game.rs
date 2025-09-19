@@ -1,5 +1,5 @@
 use rand::seq::SliceRandom;
-use crate::game::process_explosion::ExplosionSystem;
+use crate::game::bomb_processor::BombProcessor;
 
 use crate::{
     bot::Bot,
@@ -234,7 +234,7 @@ impl Game {
     /// process the bombs. If there is a winner, return true. Then not all bombs might have been processed.
     /// It stops immediately if a winner is found.
     fn process_bombs(&mut self, _logging_callback: &Option<&mut dyn FnMut(String)>) -> bool {
-        ExplosionSystem::process(&mut self.map, &mut self.alive_players)
+        BombProcessor::process(&mut self.map, &mut self.alive_players)
     }
 
     pub fn display(&self) {
