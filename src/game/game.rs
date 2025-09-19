@@ -1,4 +1,3 @@
-use crate::map::cell::CellType;
 use rand::seq::SliceRandom;
 use crate::game::process_explosion::ExplosionSystem;
 

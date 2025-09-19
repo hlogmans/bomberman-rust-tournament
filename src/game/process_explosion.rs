@@ -1,13 +1,6 @@
 use crate::coord::Coord;
 use crate::map::cell::CellType;
 use crate::map::map::Map;
-
-#[derive(Debug, Clone)]
-pub(super) struct ExplosionEvent {
-    origin: Coord,
-    affected_tiles: Vec<Coord>,
-}
-
 pub(super) struct ExplosionSystem;
 
 impl ExplosionSystem {
@@ -20,26 +13,14 @@ impl ExplosionSystem {
             return false;
         }
 
-        // 🔧 Remove bombs immediately so subsequent bomb explosion calculations see them as gone
         for bomb in &exploding_bombs {
             map.remove_bomb(*bomb);
         }
 
-        // Compute explosions *after* bombs are removed
-        let explosions = exploding_bombs
+        let affected_tiles = exploding_bombs
             .into_iter()
-            .map(|bomb| ExplosionEvent {
-                origin: bomb,
-                affected_tiles: Self::bomb_explosion_locations(bomb, map),
-            })
+            .flat_map(|bomb| Self::bomb_explosion_locations(bomb, map))
             .collect::<Vec<_>>();
-
-        // Flatten & dedup tiles
-        let affected_tiles = explosions.into_iter().flat_map(|e| e.affected_tiles).collect::<Vec<_>>();
-
-        // At the moment not really needed can be needed when adding chain explosions
-        //affected_tiles.sort();
-        //affected_tiles.dedup();
 
         for tile in affected_tiles {
             map.clear_destructable(tile);
@@ -51,6 +32,7 @@ impl ExplosionSystem {
                 }
             }
         }
+
 
         false
     }
