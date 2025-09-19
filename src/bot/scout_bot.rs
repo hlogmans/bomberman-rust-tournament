@@ -3,7 +3,7 @@ use crate::{
     bot::Bot,
     coord::Coord,
     game::map_settings::MapSettings,
-    map::{Command, Map},
+    map::map::{Command, Map},
 };
 
 #[derive(Clone)]

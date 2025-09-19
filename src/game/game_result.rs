@@ -1,6 +1,6 @@
-use crate::game::Game;
+use crate::game::game::Game;
 use crate::game::map_settings::MapSettings;
-use crate::map::Command;
+use crate::map::map::Command;
 
 /// Represents the result of a game.
 pub struct GameResult {

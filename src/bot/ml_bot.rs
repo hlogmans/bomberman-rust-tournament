@@ -3,7 +3,7 @@ use crate::{
     bot::Bot,
     coord::Coord,
     game::map_settings::MapSettings,
-    map::{Command, Map},
+    map::map::{Command, Map},
 };
 use crate::shrink::calculate_shrink_location;
 
@@ -351,6 +351,7 @@ impl MlBot {
             .get(self.idx(row, col))
             .expect("Out of bounds")
     }
+    
     #[inline(always)]
     fn idx(&self, row: usize, col: usize) -> usize {
         row * self.map_settings.width + col

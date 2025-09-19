@@ -1,10 +1,10 @@
-use std::time::Duration;
+use crate::game::game::Game;
 
+use std::time::Duration;
 use rand::Rng;
 
 use crate::{
     bot::{Bot, BotConstructor},
-    game,
 };
 
 // This file contains the code for the tournament logic.
@@ -120,7 +120,7 @@ fn run_game(bots: Vec<Box<dyn Bot>>) -> Vec<Score> {
     // Implement the game logic here
     let botnames = bots.iter().map(|bot| bot.name()).collect::<Vec<_>>();
     // Bots zijn al vers, geen clone nodig
-    let gameresult = game::Game::build(11, 11, bots).run();
+    let gameresult = Game::build(11, 11, bots).run();
     // in tournament mode, only the winner is tracked, the other players get a loss
     botnames
         .iter()

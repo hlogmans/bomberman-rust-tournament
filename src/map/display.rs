@@ -1,13 +1,13 @@
 use crate::coord::Coord;
 
 pub trait MapDisplay {
-    fn display(&self, map: &crate::map::Map);
+    fn display(&self, map: &crate::map::map::Map);
 }
 
 pub struct ConsoleDisplay;
 
 impl MapDisplay for ConsoleDisplay {
-    fn display(&self, map: &crate::map::Map) {
+    fn display(&self, map: &crate::map::map::Map) {
         for y in 0..map.height {
             for x in 0..map.width {
                 let cell = map.cell_type(Coord::from(x, y));

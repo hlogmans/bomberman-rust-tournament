@@ -15,7 +15,7 @@ include_bot_modules!();
 
 use crate::coord::Coord;
 use crate::game::map_settings::MapSettings;
-use crate::map::{Command, Map};
+use crate::map::map::{Command, Map};
 
 /// Represents a bot that can play the game.
 /// The tournament is a competition where bots compete against each other.
