@@ -30,3 +30,57 @@ impl MapValidator for PlayerCountValidator {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::map::structs::map_config::MapConfig;
+    use crate::map::validators::map_validator::traits::map_validator::MapValidator;
+
+    #[test]
+    fn test_valid_player_counts() {
+        let validator = PlayerCountValidator::new();
+
+        let mut config = MapConfig {
+            player_names: vec!["Alice".to_string(), "Bob".to_string()],
+            ..MapConfig::default()
+        };
+        assert!(validator.validate(&config).is_ok());
+
+        config.player_names = vec![
+            "Alice".to_string(),
+            "Bob".to_string(),
+            "Charlie".to_string(),
+        ];
+        assert!(validator.validate(&config).is_ok());
+
+        config.player_names = vec![
+            "Alice".to_string(),
+            "Bob".to_string(),
+            "Charlie".to_string(),
+            "Dave".to_string(),
+        ];
+        assert!(validator.validate(&config).is_ok());
+    }
+
+    #[test]
+    fn test_invalid_player_counts() {
+        let validator = PlayerCountValidator::new();
+
+        let mut config = MapConfig {
+            player_names: vec!["Alice".to_string()],
+            ..MapConfig::default()
+        };
+        assert!(validator.validate(&config).is_err());
+
+        config.player_names = vec![
+            "Alice".to_string(),
+            "Bob".to_string(),
+            "Charlie".to_string(),
+            "Dave".to_string(),
+            "Eve".to_string(),
+        ];
+        assert!(validator.validate(&config).is_err());
+    }
+}
+

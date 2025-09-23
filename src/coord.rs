@@ -3,10 +3,10 @@ use std::fmt;
 use crate::map::enums::command::Command;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Row(usize);
+pub struct Row(pub usize);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Col(usize);
+pub struct Col(pub usize);
 
 impl Row {
     pub fn new(row: usize) -> Self {

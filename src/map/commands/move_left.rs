@@ -11,3 +11,15 @@ impl PlayerCommand for MoveLeft {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::coord::Coord;
+    use crate::map::commands::move_action::tests::test_move_command;
+    use crate::map::commands::move_left::MoveLeft;
+
+    #[test]
+    fn move_left_works() {
+        test_move_command(MoveLeft, Coord::from(3, 3), Coord::from(2, 3));
+    }
+}

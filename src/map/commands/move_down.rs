@@ -10,3 +10,15 @@ impl PlayerCommand for MoveDown {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::coord::Coord;
+    use crate::map::commands::move_action::tests::test_move_command;
+    use crate::map::commands::move_down::MoveDown;
+
+    #[test]
+    fn move_down_works() {
+        test_move_command(MoveDown, Coord::from(3, 3), Coord::from(3, 4));
+    }
+}

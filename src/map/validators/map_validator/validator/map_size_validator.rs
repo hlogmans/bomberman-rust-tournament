@@ -31,3 +31,53 @@ impl MapValidator for MapSizeValidator {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::map::structs::map_config::MapConfig;
+
+    #[test]
+    fn test_valid_map_sizes() {
+        let validator = MapSizeValidator::new();
+        let config = MapConfig { width: 5, height: 5, .. MapConfig::default() };
+        assert!(validator.validate(&config).is_ok());
+
+        let config = MapConfig { width: 19, height: 19, .. MapConfig::default() };
+        assert!(validator.validate(&config).is_ok());
+
+        let config = MapConfig { width: 7, height: 11, .. MapConfig::default() };
+        assert!(validator.validate(&config).is_ok());
+    }
+
+    #[test]
+    fn test_invalid_map_sizes_too_small() {
+        let validator = MapSizeValidator::new();
+        let config = MapConfig { width: 3, height: 5, .. MapConfig::default() };
+        assert!(validator.validate(&config).is_err());
+
+        let config = MapConfig { width: 5, height: 4, .. MapConfig::default() };
+        assert!(validator.validate(&config).is_err());
+    }
+
+    #[test]
+    fn test_invalid_map_sizes_too_large() {
+        let validator = MapSizeValidator::new();
+        let config = MapConfig { width: 21, height: 15, .. MapConfig::default() };
+        assert!(validator.validate(&config).is_err());
+
+        let config = MapConfig { width: 15, height: 22, .. MapConfig::default() };
+        assert!(validator.validate(&config).is_err());
+    }
+
+    #[test]
+    fn test_invalid_map_sizes_even_numbers() {
+        let validator = MapSizeValidator::new();
+        let config = MapConfig { width: 6, height: 5, .. MapConfig::default() };
+
+        assert!(validator.validate(&config).is_err());
+
+        let config = MapConfig { width: 7, height: 8, .. MapConfig::default() };
+        assert!(validator.validate(&config).is_err());
+    }
+}

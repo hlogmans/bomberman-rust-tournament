@@ -11,3 +11,15 @@ impl PlayerCommand for MoveUp {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::coord::Coord;
+    use crate::map::commands::move_action::tests::test_move_command;
+    use crate::map::commands::move_up::MoveUp;
+
+    #[test]
+    fn move_up_works() {
+        test_move_command(MoveUp, Coord::from(3, 3), Coord::from(3, 2));
+    }
+}
