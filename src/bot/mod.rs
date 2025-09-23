@@ -14,7 +14,7 @@ include!(concat!(env!("OUT_DIR"), "/bot_registry.rs"));
 include_bot_modules!();
 
 use crate::coord::Coord;
-use crate::map::map::{Command, Map};
+use crate::map::{ map::Map, enums::command::Command };
 use crate::map::structs::map_config::MapConfig;
 
 /// Represents a bot that can play the game.

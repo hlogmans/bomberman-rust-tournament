@@ -6,3 +6,5 @@ pub mod map;
 pub mod structs;
 pub mod validators;
 pub mod commands;
+pub mod enums;
+mod factories;

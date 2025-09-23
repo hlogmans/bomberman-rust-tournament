@@ -1,10 +1,12 @@
 use std::collections::VecDeque;
+
 use crate::{
     bot::Bot,
     coord::Coord,
-    map::map::{Command, Map},
+    map::map::{Map},
 };
 
+use crate::map::enums::command::Command;
 use crate::map::structs::map_config::MapConfig;
 use crate::shrink::calculate_shrink_location;
 

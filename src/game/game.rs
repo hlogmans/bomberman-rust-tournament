@@ -4,7 +4,8 @@ use crate::game::bomb_processor::BombProcessor;
 use crate::{
     bot::Bot,
     game::{game_progress::GameProgress, game_result::GameResult},
-    map::map::{Command, ConsoleDisplay, Map, MapDisplay},
+    map::map::{ConsoleDisplay, Map, MapDisplay},
+    map::enums::command::Command,
     shrink::calculate_shrink_location,
 };
 

@@ -3,7 +3,8 @@ use rand::Rng;
 use crate::{
     bot::Bot,
     coord::Coord,
-    map::map::{Command, Map},
+    map::map::Map,
+    map::enums::command::Command,
 };
 use crate::map::structs::map_config::MapConfig;
 

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::map::map::Command;
+use crate::map::enums::command::Command;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Row(usize);

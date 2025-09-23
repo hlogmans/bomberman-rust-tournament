@@ -1,7 +1,8 @@
 use crate::{
     bot::Bot,
     coord::Coord,
-    map::map::{Command, Map},
+    map::enums::command::Command,
+    map::map::Map,
 };
 
 use crate::map::structs::map_config::MapConfig;

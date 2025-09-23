@@ -2,9 +2,9 @@ use crate::bot::passive_bot::PassiveBot;
 use crate::{
     bot::Bot,
     coord::Coord,
-    map::map::{Command, Map},
+    map::map::{Map},
 };
-
+use crate::map::enums::command::Command;
 use crate::map::structs::map_config::MapConfig;
 
 #[derive(Clone)]

@@ -14,6 +14,8 @@ use crate::coord::Row;
 use crate::coord::ValidCoord;
 use crate::map::bomb::Bomb;
 use crate::map::cell::CellType;
+use crate::map::enums::command::Command;
+use crate::map::factories::grid_factory::GridFactory;
 use crate::map::player::Player;
 use crate::map::structs::map_config::MapConfig;
 use crate::map::validators::map_validator::map_validator_chain_factory::MapValidatorChainFactory;
@@ -45,8 +47,8 @@ impl Map {
         ];
 
         // Create a new map with the given width and height, filled with destructables
-
-        let grid = prepare_grid(width, height);
+        let factory = GridFactory::new(width, height);
+        let grid = factory.prepare_grid();
 
         let mut map = Map {
             map_settings: config.clone(),
@@ -98,9 +100,7 @@ impl Map {
         }
     }
 
-    fn cell_index(&self, position: &Coord) -> usize {
-        position.row.get() * self.width + position.col.get()
-    }
+
 
     pub fn get_player(&self, no: usize) -> Option<&Player> {
         self.players.get(no)
@@ -115,10 +115,6 @@ impl Map {
             }
         }
         None // No player found at this location
-    }
-
-    fn get_player_mut(&mut self, no: usize) -> Option<&mut Player> {
-        self.players.get_mut(no)
     }
 
     pub fn get_player_name(&self, no: usize) -> Option<String> {
@@ -172,6 +168,14 @@ impl Map {
                 bomb.timer -= 1; // Decrease the timer
             }
         }
+    }
+
+    fn cell_index(&self, position: &Coord) -> usize {
+        position.row.get() * self.width + position.col.get()
+    }
+
+    fn get_player_mut(&mut self, no: usize) -> Option<&mut Player> {
+        self.players.get_mut(no)
     }
 
     // part one: the server must validate the move on a map.
@@ -234,56 +238,6 @@ impl Map {
     }
 }
 
-/// Prepare the 2 dimension Vec by adding enough walls
-/// - the outer line is walled
-/// - the line within the outer wall is destructable
-/// - every even row, and every even column contains a wall
-///
-///  WWWWWWW line 0
-///  W.....W
-///  W.W.W.W line 2
-///  W.....W
-///  W.W.W.W
-///  W.....W
-///  WWWWWWW line 6
-pub fn prepare_grid(width: usize, height: usize) -> Vec<char> {
-    // the grid is now filled with dots (destructable). I need to add walls.
-    // first wall the top layer
-    let mut grid = vec!['.'; width * height];
-
-    for row in 0..height {
-        for column in 0..width {
-            let walled = (row == 0 || row == height - 1 || column == 0 || column == width - 1)
-                || (column % 2 == 0 && row % 2 == 0);
-            if walled {
-                grid[row * width + column] = 'W';
-            }
-        }
-    }
-    grid
-}
-
-// a command is either up, down, left, right, wait or place_bomb.
-#[derive(Debug, Clone, Copy)]
-pub enum Command {
-    Up,
-    Down,
-    Left,
-    Right,
-    Wait,
-    PlaceBomb,
-}
-
-impl Command {
-    // is this a move command? False if the position won't change.
-    fn is_move(&self) -> bool {
-        match self {
-            Command::Up | Command::Down | Command::Left | Command::Right => true,
-            Command::Wait | Command::PlaceBomb => false,
-        }
-    }
-}
-
 /// determine if you can move to a certain type of cell
 /// At the moment, only empty cells are considered movable.
 fn can_move_to(cell: CellType) -> bool {
@@ -293,47 +247,11 @@ fn can_move_to(cell: CellType) -> bool {
 // calculate the new position based on the command, just the location, not if it is valid or not.
 fn new_position(current_position: Coord, command: &Command) -> Option<Coord> {
     match command {
-        Command::Up => {
-            current_position.move_up() // Move up
-        }
-        Command::Down => {
-            current_position.move_down() // Move down, ensuring it doesn't go out of bounds
-        }
-        Command::Left => {
-            current_position.move_left() // Move left
-        }
-        Command::Right => {
-            current_position.move_right() // Move right, ensuring it doesn't go out of bounds
-        }
-        // wait or bomb is no-move
+        Command::Up => current_position.move_up(),
+        Command::Down => current_position.move_down(),
+        Command::Left => current_position.move_left(),
+        Command::Right => current_position.move_right(),
         Command::Wait | Command::PlaceBomb => Some(current_position),
     }
 }
 
-#[cfg(test)]
-mod tests {
-
-    #[test]
-    fn test_prepare_grid_example() {
-        // Example grid:
-        // 0: WWWWWWW
-        // 1: W.....W
-        // 2: W.W.W.W
-        // 3: W.....W
-        // 4: W.W.W.W
-        // 5: W.....W
-        // 6: WWWWWWW
-
-        let width = 7;
-        let height = 7;
-        let grid = super::prepare_grid(width, height);
-
-        let expected = vec![
-            'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', '.', '.', '.', '.', '.', 'W', 'W', '.', 'W',
-            '.', 'W', '.', 'W', 'W', '.', '.', '.', '.', '.', 'W', 'W', '.', 'W', '.', 'W', '.',
-            'W', 'W', '.', '.', '.', '.', '.', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W',
-        ];
-
-        assert_eq!(grid, expected);
-    }
-}
