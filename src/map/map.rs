@@ -88,29 +88,13 @@ impl Map {
         }
 
         let idx = self.cell_index(&position);
-        match self.grid[idx] {
-            ' ' => CellType::Empty,
-            'B' => CellType::Bomb,
-            'W' => CellType::Wall,
-            'P' => CellType::Player,
-            '.' => CellType::Destroyable,
-            _ => CellType::Empty, // Default case for unknown characters
-        }
+        CellType::from_char(self.grid[idx])
     }
 
     pub(super) fn set_cell(&mut self, position: Coord, cell_type: CellType) {
         if position.is_valid(self.width, self.height) {
-            let char = match cell_type {
-                CellType::Empty => ' ',
-                CellType::Bomb => 'B',
-                CellType::Player => 'P',
-                CellType::Wall => 'W',
-                _ => panic!(
-                    "Cannot set this cell type directly, use appropriate methods for walls or destroyable cells"
-                ),
-            };
             let idx = self.cell_index(&position);
-            self.grid[idx] = char;
+            self.grid[idx] = cell_type.as_char();
         }
     }
 

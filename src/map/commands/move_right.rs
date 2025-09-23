@@ -6,10 +6,8 @@ pub struct MoveRight;
 
 impl PlayerCommand for MoveRight {
     fn execute(&self, map: &mut Map, player_index: usize) {
-        if let Some(current) = map.get_player_position(player_index) {
-            if let Some(new_pos) = current.move_right() {
-                move_action::move_player(map, player_index, new_pos);
-            }
+        if let Some(current) = map.get_player_position(player_index) && let Some(new_pos) = current.move_right() {
+            move_action::move_player(map, player_index, new_pos);
         }
     }
 }
