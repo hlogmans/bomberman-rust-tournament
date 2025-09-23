@@ -16,7 +16,7 @@ use crate::map::bomb::Bomb;
 use crate::map::cell::CellType;
 use crate::map::player::Player;
 use crate::map::structs::map_config::MapConfig;
-use crate::map::validators::map_validator_chain_factory::MapValidatorChainFactory;
+use crate::map::validators::map_validator::map_validator_chain_factory::MapValidatorChainFactory;
 
 // a map is a 2D vector of characters. But also contains a list of players and a turn number.
 pub struct Map {

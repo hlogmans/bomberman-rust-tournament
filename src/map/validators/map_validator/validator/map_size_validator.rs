@@ -1,6 +1,6 @@
 
 use crate::map::structs::map_config::MapConfig;
-use crate::map::validators::traits::map_validator::MapValidator;
+use crate::map::validators::map_validator::traits::map_validator::MapValidator;
 
 pub struct MapSizeValidator {
     next: Option<Box<dyn MapValidator>>,

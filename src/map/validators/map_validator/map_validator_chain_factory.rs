@@ -1,7 +1,7 @@
 use crate::map::structs::map_config::MapConfig;
-use crate::map::validators::traits::map_validator::MapValidator;
-use crate::map::validators::validator::map_size_validator::MapSizeValidator;
-use crate::map::validators::validator::player_count_validator::PlayerCountValidator;
+use crate::map::validators::map_validator::traits::map_validator::MapValidator;
+use crate::map::validators::map_validator::validator::map_size_validator::MapSizeValidator;
+use crate::map::validators::map_validator::validator::player_count_validator::PlayerCountValidator;
 
 pub struct MapValidatorChainFactory;
 
