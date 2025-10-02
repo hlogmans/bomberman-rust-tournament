@@ -1,0 +1,15 @@
+[package]
+name = "runner"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+game = { path = "../game" }   # depends on the game library crate
+bots = { path = "../bots" }   # depends on the bot library crate
+num_cpus = "1.17"             # optional, for thread count detection
+rand = "0.8"
+
+
+[[bin]]
+name = "runner"
+path = "src/main.rs"
