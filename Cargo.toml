@@ -1,11 +1,10 @@
-[package]
-name = "rust-bomberman"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+members = [
+    "game",
+    "bots", "tournament",
+]
 
-[dependencies]
-rand = "0.9.1"
-num_cpus = "1.13"
+default-members = ["tournament"]
 
-[profile.release]
-lto = true
+[workspace.metadata.clippy]
+deny = ["unsafe_code"]
