@@ -1,5 +1,5 @@
 use rust_bomberman::bot::random_bot::RandomBot;
-use rust_bomberman::game::Game;
+use rust_bomberman::game::game::Game;
 
 #[test]
 fn integration_game_runs_and_has_winner() {
