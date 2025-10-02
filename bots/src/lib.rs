@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use game::bot::bot::BotConstructor;
 
 include!(concat!(env!("OUT_DIR"), "/bot_registry.rs"));

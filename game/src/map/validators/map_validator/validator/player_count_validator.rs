@@ -20,8 +20,8 @@ impl MapValidator for PlayerCountValidator {
 
     fn validate(&self, config: &MapConfig) -> Result<(), String> {
         let n = config.player_names.len();
-        if n < 2 || n > 4 {
-            return Err(format!("Invalid number of players: {}. Must be 2-4", n));
+        if !(2..=4).contains(&n) {
+            return Err(format!("Invalid number of players: {n}. Must be 2-4"));
         }
         if let Some(ref next_validator) = self.next {
             next_validator.validate(config)

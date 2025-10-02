@@ -5,3 +5,6 @@ members = [
 ]
 
 default-members = ["tournament"]
+
+[workspace.metadata.clippy]
+deny = ["unsafe_code"]

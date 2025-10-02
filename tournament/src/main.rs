@@ -5,6 +5,7 @@ use std::time::{Duration, Instant};
 use bots::available_bots;
 use runner::tournament::{BotScores, run_tournament};
 
+
 fn main() {
     let num_threads = num_cpus::get();
     println!("Running on {num_threads} threads");
@@ -32,7 +33,7 @@ fn main() {
                 .sum();
 
             let speed = total as f64 / start_time.elapsed().as_secs_f64();
-            print!("Total games: {}, Speed: {:.0} games/s\r", total, speed);
+            print!("Total games: {total}, Speed: {speed:.0} games/s\r");
             use std::io::{Write, stdout};
             stdout().flush().unwrap();
 
@@ -45,12 +46,12 @@ fn main() {
 
     // Tournament threads
     let mut handles = Vec::new();
-    for thread_idx in 0..num_threads {
+    for counter in round_counters.iter().take(num_threads){
         let bot_constructors = available_bots();
-        let counter = round_counters[thread_idx].clone();
+        let round_counter = counter.clone();
 
         handles.push(thread::spawn(move || {
-            run_tournament(&bot_constructors, Some(counter), duration)
+            run_tournament(&bot_constructors, Some(round_counter), duration)
         }));
     }
 

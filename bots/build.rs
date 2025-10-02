@@ -45,7 +45,7 @@ fn main() {
     generated_code.push_str("macro_rules! include_bot_modules {\n");
     generated_code.push_str("    () => {\n");
     for (module_name, _) in &bot_info {
-        generated_code.push_str(&format!("        #[path = \"bot/{}.rs\"]\n        pub mod {};\n", module_name, module_name));
+        generated_code.push_str(&format!("        #[path = \"bot/{module_name}.rs\"]\n        pub mod {module_name};\n"));
     }
     generated_code.push_str("    };\n}\n\n");
 
@@ -70,7 +70,7 @@ fn main() {
     generated_code.push_str("pub fn get_bot_names() -> Vec<String> {\n");
     generated_code.push_str("    vec![\n");
     for (_, struct_name) in &bot_info {
-        generated_code.push_str(&format!("        \"{}\".to_string(),\n", struct_name));
+        generated_code.push_str(&format!("        \"{struct_name}\".to_string(),\n"));
     }
     generated_code.push_str("    ]\n}\n");
 

@@ -23,6 +23,7 @@ use crate::map::structs::map_config::MapConfig;
 /// NEW: Bots are now FULLY automatically registered!
 /// Just add a new .rs file to src/bot/ with a struct implementing Bot trait and a new() function.
 /// No manual registration needed anywhere - not even module declarations!
+#[forbid(unsafe_code)]
 pub trait Bot {
     fn name(&self) -> String;
 
