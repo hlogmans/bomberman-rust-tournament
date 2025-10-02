@@ -20,16 +20,19 @@ pub fn move_player(map: &mut Map, player_index: usize, new_pos: Coord) {
 
 #[cfg(test)]
 pub mod tests {
+    use std::sync::Arc;
     use crate::coord::Coord;
     use crate::map::cell::CellType;
     use crate::map::map::Map;
     use crate::map::commands::traits::player_command::PlayerCommand;
+    use crate::map::factories::command_factory::DefaultCommandFactory;
     use crate::map::player::Player;
     use crate::map::structs::map_config::MapConfig;
 
     pub fn test_move_command<C: PlayerCommand>(command: C, start: Coord, expected: Coord) {
         //Arrange
-        let mut map = Map::create(MapConfig { width: 7, height: 11, ..MapConfig::default() });
+        let mut map = Map::new(MapConfig { width: 7, height: 11, ..MapConfig::default() }, Arc::new(DefaultCommandFactory)).build();
+
 
         map.players = vec![Player { name: "player1".to_string(), position: start }];
         map.set_cell(start, CellType::Player);

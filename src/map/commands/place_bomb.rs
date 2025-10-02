@@ -15,6 +15,7 @@ impl PlayerCommand for PlaceBomb {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
     use super::*;
     use crate::map::map::Map;
     use crate::map::commands::traits::player_command::PlayerCommand;
@@ -22,12 +23,13 @@ mod tests {
     use crate::map::structs::map_config::MapConfig;
     use crate::map::cell::CellType;
     use crate::coord::Coord;
+    use crate::map::factories::command_factory::DefaultCommandFactory;
 
     #[test]
     fn test_place_bomb_basic() {
         //Arrange
-        let config = MapConfig { width: 7, height: 7, ..MapConfig::default() };
-        let mut map = Map::create(config);
+        let mut map = Map::new(MapConfig { width: 7, height: 7, ..MapConfig::default() }, Arc::new(DefaultCommandFactory)).build();
+
 
         let player_pos = Coord::from(3, 3);
         map.players = vec![Player { name: "player1".to_string(), position: player_pos }];
@@ -45,8 +47,7 @@ mod tests {
     #[test]
     fn test_place_bomb_no_player() {
         // Arrange
-        let config = MapConfig { width: 7, height: 7, ..MapConfig::default() };
-        let mut map = Map::create(config);
+        let mut map = Map::new(MapConfig { width: 7, height: 7, ..MapConfig::default() }, Arc::new(DefaultCommandFactory)).build();
         // default has 2 players atm
         let player_index = 3;
 

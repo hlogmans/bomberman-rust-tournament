@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use rand::seq::SliceRandom;
 use crate::game::bomb_processor::BombProcessor;
 
@@ -63,11 +64,7 @@ impl Game {
             player_names: players.iter().map(|bot| bot.name().to_string()).collect(),
         };
 
-        let map = Map::create(
-            map_settings
-        );
-
-        //let endgame = map_settings.endgame;
+        let  map = Map::new(map_settings, Arc::new(crate::map::factories::command_factory::DefaultCommandFactory)).build();
 
         Game {
             map,

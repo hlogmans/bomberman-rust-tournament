@@ -11,10 +11,12 @@ impl PlayerCommand for Wait {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
     use crate::coord::Coord;
     use crate::map::commands::move_action::tests::test_move_command;
     use crate::map::commands::traits::player_command::PlayerCommand;
     use crate::map::commands::wait::Wait;
+    use crate::map::factories::command_factory::DefaultCommandFactory;
     use crate::map::map::Map;
     use crate::map::structs::map_config::MapConfig;
 
@@ -27,7 +29,7 @@ mod tests {
     fn wait_should_not_bomb() {
         // Arrange
         let config = MapConfig { width: 7, height: 7, ..MapConfig::default() };
-        let mut map = Map::create(config);
+        let mut map = Map::new(config, Arc::new(DefaultCommandFactory)).build();
 
         // Assert
         let wait = Wait;

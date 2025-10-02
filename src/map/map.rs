@@ -1,10 +1,4 @@
-use crate::map::commands::move_down::MoveDown;
-use crate::map::commands::move_left::MoveLeft;
-use crate::map::commands::move_right::MoveRight;
-use crate::map::commands::move_up::MoveUp;
-use crate::map::commands::place_bomb::PlaceBomb;
-use crate::map::commands::traits::player_command::PlayerCommand;
-use crate::map::commands::wait::Wait;
+use std::sync::Arc;
 
 pub use crate::map::display::*;
 
@@ -15,6 +9,7 @@ use crate::coord::ValidCoord;
 use crate::map::bomb::Bomb;
 use crate::map::cell::CellType;
 use crate::map::enums::command::Command;
+use crate::map::factories::command_factory::CommandFactory;
 use crate::map::factories::grid_factory::GridFactory;
 use crate::map::player::Player;
 use crate::map::structs::map_config::MapConfig;
@@ -29,56 +24,53 @@ pub struct Map {
     pub players: Vec<Player>,
     // the turn number, starts at 0 and increments every turn. One turn is everybody making a move.
     pub bombs: Vec<Bomb>, // List of bombs on the map
+    command_factory: Arc<dyn CommandFactory>,
 }
 
 
 impl Map {
-    pub fn create(config: MapConfig) -> Self {
-        let width = config.width;
-        let height = config.height;
-
-        MapValidatorChainFactory::validate(&config).expect("Map validation failed");
-
-        let player_locations = [
-            Coord::new(Col::new(1), Row::new(1)),
-            Coord::new(Col::new(1), Row::new(width - 2)),
-            Coord::new(Col::new(height - 2), Row::new(1)),
-            Coord::new(Col::new(height - 2), Row::new(width - 2)),
-        ];
-
-        // Create a new map with the given width and height, filled with destructables
-        let factory = GridFactory::new(width, height);
-        let grid = factory.prepare_grid();
-
-        let mut map = Map {
-            map_settings: config.clone(),
-            grid,
-            width,
-            height,
-            players: config.player_names
-                .iter()
-                .cloned()
-                .zip(player_locations.iter().cloned())
-                .map(|(name, position)| Player {
-                    name,
-                    position, // Initial position will be set later
-                })
-                .collect(),
+    pub fn new(config: MapConfig, factory: Arc<dyn CommandFactory>) -> Self {
+        Self {
+            map_settings: config,
+            grid: vec![],
+            width: 0,
+            height: 0,
+            players: Vec::new(),
             bombs: Vec::new(),
-        };
+            command_factory: factory,
+        }
+    }
 
-        // remove_destructables_around_users in a 3x3 area
-        map.remove_destructables_around_users(
-            map.players.iter().map(|player| player.position).collect(),
+    pub fn build(mut self) -> Self {
+        let width = self.map_settings.width;
+        let height = self.map_settings.height;
+
+        MapValidatorChainFactory::validate(&self.map_settings).expect("Map validation failed");
+
+        let factory_grid = GridFactory::new(width, height);
+        self.grid = factory_grid.prepare_grid();
+        self.width = width;
+        self.height = height;
+
+        self.players = self.map_settings.player_names.iter().cloned()
+            .zip([
+                Coord::new(Col::new(1), Row::new(1)),
+                Coord::new(Col::new(1), Row::new(width - 2)),
+                Coord::new(Col::new(height - 2), Row::new(1)),
+                Coord::new(Col::new(height - 2), Row::new(width - 2)),
+            ])
+            .map(|(name, position)| Player { name, position })
+            .collect();
+
+        self.remove_destructables_around_users(
+            self.players.iter().map(|p| p.position).collect(),
         );
 
-        map
+        self
     }
 
     pub fn clear_destructable(&mut self, location: Coord) {
-        // Clear the destructable cell at the given location
         if self.cell_type(location) == CellType::Destroyable {
-            // If the cell is destructable, clear it
             self.set_cell(location, CellType::Empty);
         }
     }
@@ -99,8 +91,6 @@ impl Map {
             self.grid[idx] = cell_type.as_char();
         }
     }
-
-
 
     pub fn get_player(&self, no: usize) -> Option<&Player> {
         self.players.get(no)
@@ -208,17 +198,13 @@ impl Map {
             return false; // Invalid move, do not perform it
         }
 
-        let command: Box<dyn PlayerCommand> = match command {
-            Command::Up => Box::new(MoveUp),
-            Command::Down => Box::new(MoveDown),
-            Command::Left => Box::new(MoveLeft),
-            Command::Right => Box::new(MoveRight),
-            Command::PlaceBomb => Box::new(PlaceBomb),
-            Command::Wait => Box::new(Wait),
-        };
-
-        command.execute(self, player);
-        true
+        // Use the injected factory
+        if let Some(cmd) = self.command_factory.create(&command) {
+            cmd.execute(self, player);
+            true
+        } else {
+            false
+        }
     }
 
     pub fn set_wall(&mut self, position: Coord) {

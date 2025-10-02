@@ -84,6 +84,8 @@ impl BombProcessor {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+    use crate::map::factories::command_factory;
     use crate::map::structs::map_config::MapConfig;
     use super::*;
 
@@ -95,7 +97,8 @@ mod tests {
             height: 7,
             ..Default::default()
         };
-        let map = &mut Map::create(map_settings);
+
+        let  map = &mut Map::new(map_settings, Arc::new(command_factory::DefaultCommandFactory)).build();
 
         map.clear_destructable(Coord::from(3, 3));
         map.clear_destructable(Coord::from(2, 3)); // up
@@ -131,7 +134,8 @@ mod tests {
             height: 5,
             ..Default::default()
         };
-        let map = &mut Map::create(map_settings);
+
+        let  map = &mut Map::new(map_settings, Arc::new(command_factory::DefaultCommandFactory)).build();
 
         let result = BombProcessor::bomb_explosion_locations(Coord::from(1, 1), map);
 
@@ -152,7 +156,8 @@ mod tests {
             height: 5,
             ..Default::default()
         };
-        let map = &mut Map::create(map_settings);
+
+        let  map = &mut Map::new(map_settings, Arc::new(command_factory::DefaultCommandFactory)).build();
 
         let result = BombProcessor::bomb_explosion_locations(Coord::from(3, 3), map);
 
@@ -173,7 +178,8 @@ mod tests {
             height: 5,
             ..Default::default()
         };
-        let map = &mut Map::create(map_settings);
+
+        let map = &mut Map::new(map_settings, Arc::new(command_factory::DefaultCommandFactory)).build();
 
         let result = BombProcessor::bomb_explosion_locations(Coord::from(2, 2), map);
 

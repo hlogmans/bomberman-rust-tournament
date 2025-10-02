@@ -7,4 +7,4 @@ pub mod structs;
 pub mod validators;
 pub mod commands;
 pub mod enums;
-mod factories;
+pub mod factories;
