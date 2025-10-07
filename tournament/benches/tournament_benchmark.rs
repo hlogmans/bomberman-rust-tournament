@@ -5,7 +5,7 @@ use runner::tournament::prepare_bots;
 
 fn tournament_benchmark(c: &mut Criterion) {
     let mut config = Criterion::default()
-        .sample_size(100) // default is 100; increase for more precision
+        .sample_size(10000) // default is 100; increase for more precision
         .measurement_time(std::time::Duration::from_secs(120)) // default is 5s
         .warm_up_time(std::time::Duration::from_secs(5)); // default is 3s
 
