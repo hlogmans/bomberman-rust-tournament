@@ -1,5 +1,5 @@
-use rust_bomberman::bot::random_bot::RandomBot;
-use rust_bomberman::game::game::Game;
+use bots::random_bot::RandomBot;
+use game::game::game::Game;
 
 #[test]
 fn integration_game_runs_and_has_winner() {
@@ -28,4 +28,20 @@ fn integration_game_runs_and_has_winner() {
         "Er zou een winnaar-naam moeten zijn als het spel klaar is"
     );
     println!("Winnaar: {:?}", winner_name);
+}
+
+#[test]
+fn test() {
+    // Arrange: maak twee bots aan
+    let bot1 = Box::new(RandomBot::new());
+    let bot2 = Box::new(RandomBot::new());
+
+    // Start een spel met een kleine map zodat het snel klaar is
+    let mut game = Game::build(7, 7, vec![bot1, bot2]);
+
+    let x = game.run().replay_data;
+
+    println!("Winnaar: {:?}", x);
+    println!("Winnaar: {:?}", x);
+
 }

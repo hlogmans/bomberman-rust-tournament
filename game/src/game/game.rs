@@ -22,7 +22,7 @@ pub struct Game {
     pub turn: usize,
 
     // history of handles player actions, it is deterministic, so it can be replayed.
-    pub player_actions: Vec<(usize, Command)>,
+    pub player_actions: Vec<Vec<Command>>,
 
     // if the winner is determined, it will be set to Some(index of the winner)
     pub winner: Option<usize>,
@@ -65,12 +65,17 @@ impl Game {
 
         let  map = Map::new(map_settings, Arc::new(crate::map::factories::command_factory::DefaultCommandFactory)).build();
 
+        let mut player_actions = Vec::with_capacity(player_count);
+        for _ in 0..player_count {
+            player_actions.push(Vec::new());
+        }
+
         Game {
             map,
             bots: players,
             player_count,
             turn: 0,
-            player_actions: Vec::new(),
+            player_actions: player_actions,
             winner: None,
             // initialize alive player and shuffle them
             alive_players: Vec::new(),
@@ -96,7 +101,7 @@ impl Game {
         GameResult::build(self)
     } // loop until a winner is set
 
-    pub fn replay(&mut self, commands: &Vec<Command>) -> GameResult {
+    pub fn replay(&mut self, commands: &Vec<Vec<Command>>) -> GameResult {
         while self.winner.is_none() {
             self.run_round(None, Some(commands), None);
         }
@@ -113,7 +118,7 @@ impl Game {
     pub fn run_round(
         &mut self,
         progress_callback: Option<&mut dyn FnMut(&GameProgress)>,
-        replay_commands: Option<&Vec<Command>>,
+        replay_commands: Option<&Vec<Vec<Command>>>,
         logging_callback: Option<&mut dyn FnMut(String)>,
     ) -> bool {
         // This method will run a round of the game.
@@ -130,20 +135,16 @@ impl Game {
                 .expect("Bot not found for player index");
             let loc = self.map.get_player(player_index).unwrap().position;
 
-            // if the game is a replay, take the move from the Vec
-            let bot_move = if let Some(replay_commands) = replay_commands {
-                replay_commands[player_index]
-
+            let command = if let Some(replay) = replay_commands {
+                replay[player_index][self.turn]
             } else {
-                bot.get_move(&self.map, loc) // Call bot for move
+                let new_command = bot.get_move(&self.map, loc);
+                self.player_actions[player_index].push(new_command);
+                new_command
             };
 
-            self.player_actions.push((player_index, bot_move));
+            self.map.perform_move(player_index, command);
 
-            // handle the command
-            self.map.perform_move(player_index, bot_move);
-
-            // Check for winner after processing all actions
             if self.check_winner() {
                 return true;
             }
@@ -153,7 +154,6 @@ impl Game {
         if self.process_bombs(&logging_callback) {
             return true;
         }
-
 
         // reduce map size if needed
         if self.map.map_settings.endgame <= self.turn {
