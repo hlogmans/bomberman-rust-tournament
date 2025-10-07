@@ -1,6 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use rust_bomberman::{tournament, bot::available_bots};
-use rust_bomberman::tournament::prepare_bots;
+use bots::available_bots;
+use runner::tournament;
+use runner::tournament::prepare_bots;
 
 fn tournament_benchmark(c: &mut Criterion) {
     let mut config = Criterion::default()

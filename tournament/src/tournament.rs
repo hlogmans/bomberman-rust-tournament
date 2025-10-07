@@ -1,7 +1,8 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
-use rand::Rng;
+use rand::prelude::SliceRandom;
 use game::bot::bot::{Bot, BotConstructor};
 use game::game::game::Game;
 
@@ -13,32 +14,32 @@ pub struct Score {
 }
 
 pub struct BotScores {
-    pub scores: Vec<(String, Score)>,
+    pub scores: HashMap<String, Score>,
     pub total_games: usize,
 }
 
 impl BotScores {
     pub fn new() -> Self {
         BotScores {
-            scores: Vec::new(),
+            scores: HashMap::new(),
             total_games: 0,
         }
     }
 
-    pub fn add_score(&mut self, botname: String, score_to_add: Score) {
-        // check if bot already exists in scores
-        if let Some((_, score)) = self.scores.iter_mut().find(|(name, _)| name == &botname) {
-            score.wins += score_to_add.wins;
-            score.losses += score_to_add.losses;
-            score.total_games += score_to_add.total_games;
-        } else {
-            self.scores.push((botname, score_to_add));
-        }
+    pub fn add_score(&mut self, botname: &str, score_to_add: Score) {
+        self.scores
+            .entry(botname.to_string())
+            .and_modify(|score| {
+                score.wins += score_to_add.wins;
+                score.losses += score_to_add.losses;
+                score.total_games += score_to_add.total_games;
+            })
+            .or_insert(score_to_add);
     }
 
     pub fn merge_with(&mut self, other: &BotScores) {
         for (botname, score) in other.scores.iter() {
-            self.add_score(botname.clone(), *score);
+            self.add_score(botname, *score);
         }
         self.total_games += other.total_games;
     }
@@ -50,25 +51,16 @@ pub fn run_tournament(
     duration: Duration,
 ) -> BotScores {
     let mut bot_scores = BotScores::new();
-    let botcount = bot_constructors.len();
-    let mut rng = rand::thread_rng();
     let start = Instant::now();
 
     while start.elapsed() < duration {
-        // Pick two distinct bots
-        let idx1 = rng.gen_range(0..botcount);
-        let mut idx2 = rng.gen_range(0..botcount);
-        while idx2 == idx1 {
-            idx2 = rng.gen_range(0..botcount);
-        }
+        let game_bots = prepare_bots(bot_constructors);
+        let names: Vec<String> = game_bots.iter().map(|b| b.name()).collect();
 
-        let bots: Vec<Box<dyn Bot>> = vec![bot_constructors[idx1](), bot_constructors[idx2]()];
-        let names: Vec<String> = bots.iter().map(|b| b.name()).collect();
-
-        let scores_vec: Vec<Score> = run_game(bots);
+        let scores_vec: Vec<Score> = run_game(game_bots);
 
         for (name, score) in names.iter().zip(scores_vec.iter()) {
-            bot_scores.add_score(name.clone(), *score);
+            bot_scores.add_score(name, *score);
         }
 
         if let Some(counter) = &round_counter {
@@ -81,7 +73,23 @@ pub fn run_tournament(
     bot_scores
 }
 
-fn run_game(bots: Vec<Box<dyn Bot>>) -> Vec<Score> {
+pub fn prepare_bots(bot_constructors: &[BotConstructor]) -> Vec<Box<dyn Bot>> {
+    let botcount = bot_constructors.len();
+    let mut rng = rand::thread_rng();
+
+    let mut indices: Vec<usize> = (0..botcount).collect();
+    indices.shuffle(&mut rng);
+    let idx1 = indices[0];
+    let idx2 = indices[1];
+
+    // pick two bots at random
+    let bot1 = bot_constructors[idx1]();
+    let bot2 = bot_constructors[idx2]();
+
+    vec![bot1, bot2]
+}
+
+pub fn run_game(bots: Vec<Box<dyn Bot>>) -> Vec<Score> {
     let bot_names = bots.iter().map(|b| b.name()).collect::<Vec<_>>();
     let gameresult = Game::build(11, 11, bots).run();
 

@@ -104,10 +104,7 @@ impl Game {
     }
 
     pub fn winner_name(&self) -> Option<String> {
-        match self.winner {
-            None => None,
-            Some(x) => self.map.get_player_name(x),
-        }
+        self.winner.and_then(|x| self.map.get_player_name(x))
     }
 
     /// run a single turn for the game. Has a callback for player actions.
@@ -134,12 +131,12 @@ impl Game {
             let loc = self.map.get_player(player_index).unwrap().position;
 
             // if the game is a replay, take the move from the Vec
-            let bot_move;
-            if let Some(replay_commands) = replay_commands {
-                bot_move = replay_commands[player_index];
+            let bot_move = if let Some(replay_commands) = replay_commands {
+                replay_commands[player_index]
+
             } else {
-                bot_move = bot.get_move(&self.map, loc); // Call the provided callback to get the player's command
-            }
+                bot.get_move(&self.map, loc) // Call bot for move
+            };
 
             self.player_actions.push((player_index, bot_move));
 
@@ -156,6 +153,7 @@ impl Game {
         if self.process_bombs(&logging_callback) {
             return true;
         }
+
 
         // reduce map size if needed
         if self.map.map_settings.endgame <= self.turn {

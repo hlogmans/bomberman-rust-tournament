@@ -9,6 +9,12 @@ bots = { path = "../bots" }   # depends on the bot library crate
 num_cpus = "1.17"             # optional, for thread count detection
 rand = "0.8"
 
+[[bench]]
+name = "tournament_benchmark"
+harness = false
+
+[dev-dependencies]
+criterion = "0.7"
 
 [[bin]]
 name = "runner"
