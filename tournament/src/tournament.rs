@@ -16,11 +16,10 @@ use js_sys::Date;
 pub fn run_tournament(bot_constructors: &[BotConstructor], round_counter: Option<Arc<AtomicUsize>>, duration: Duration, game_config: Vec<GameConfig>) -> TournamentResult {
     let mut tournament_result = TournamentResult::new();
     let start = Instant::now();
+    let mut config_iter = game_config.iter().cycle();
 
-    for config in game_config.iter().cycle() {
-        if start.elapsed() > duration {
-            break; // stop when time limit is reached
-        }
+    while start.elapsed() < duration {
+        let config = config_iter.next().unwrap();
         run_tournament_game(&mut tournament_result, bot_constructors, &round_counter, config);
     }
 
@@ -30,11 +29,10 @@ pub fn run_tournament(bot_constructors: &[BotConstructor], round_counter: Option
 pub fn run_tournament_wasm(bot_constructors: &[BotConstructor], round_counter: Option<Arc<AtomicUsize>>, duration_ms: f64, game_config: Vec<GameConfig>) -> TournamentResult {
     let mut tournament_result = TournamentResult::new();
     let start = Date::now();
+    let mut config_iter = game_config.iter().cycle();
 
-    for config in game_config.iter().cycle() {
-        if Date::now() - start > duration_ms  {
-            break; // stop when time limit is reached
-        }
+    while Date::now() - start > duration_ms {
+        let config = config_iter.next().unwrap();
         run_tournament_game(&mut tournament_result, bot_constructors, &round_counter, config);
     }
 

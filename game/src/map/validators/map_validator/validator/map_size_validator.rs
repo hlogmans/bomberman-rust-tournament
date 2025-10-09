@@ -21,8 +21,8 @@ impl MapValidator for MapSizeValidator {
     fn validate(&self, config: &MapConfig) -> Result<(), String> {
         let w = config.width;
         let h = config.height;
-        if w < 5 || h < 5 || w > 20 || h > 20 || w.is_multiple_of(2) || h.is_multiple_of(2) {
-            return Err(format!("Invalid map size: {w}x{h}. Must be odd and 5-20"));
+        if w < 7 || h < 7 || w > 20 || h > 20 || w.is_multiple_of(2) || h.is_multiple_of(2) {
+            return Err(format!("Invalid map size: {w}x{h}. Must be odd and 7-20"));
         }
         if let Some(ref next_validator) = self.next {
             next_validator.validate(config)
