@@ -6,7 +6,8 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use bots::available_bots;
-use runner::tournament::{BotScores, run_tournament};
+use runner::tournament::run_tournament;
+use runner::tournament_result::TournamentResult;
 
 fn main() {
     let num_threads = num_cpus::get();
@@ -54,9 +55,9 @@ fn main() {
         .collect();
 
     // Merge results
-    let mut grand_totals = BotScores::new();
+    let mut grand_totals = TournamentResult::new();
     for handle in handles {
-        grand_totals.merge_with(&handle.join().unwrap());
+        grand_totals.merge_with(&mut handle.join().unwrap());
     }
 
     done.store(true, Ordering::Relaxed);
@@ -74,5 +75,12 @@ fn main() {
             "{bot}: WinPercentage: {:.1}% {score:?}",
             (score.wins as f64 / score.total_games as f64) * 100.0
         );
+    }
+
+    if let Some(ref result) = grand_totals.most_interesting {
+        println!("\nMost interesting replay:");
+        //println!("{}", runner::tournament::replay(result));
+    } else {
+        println!("No interesting game recorded.");
     }
 }
