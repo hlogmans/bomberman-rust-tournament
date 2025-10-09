@@ -1,5 +1,5 @@
 use std::sync::Arc;
-
+use serde::Serialize;
 pub use crate::map::display::*;
 
 use crate::coord::Col;
@@ -15,6 +15,11 @@ use crate::map::player::Player;
 use crate::map::structs::map_config::MapConfig;
 use crate::map::validators::map_validator::map_validator_chain_factory::MapValidatorChainFactory;
 
+#[derive(Serialize)]
+struct MapGridSnapshot {
+    grid: Vec<Vec<char>>, // 2D array for easier visualization
+}
+
 // a map is a 2D vector of characters. But also contains a list of players and a turn number.
 pub struct Map {
     pub map_settings: MapConfig,
@@ -22,6 +27,7 @@ pub struct Map {
     pub height: usize,
     pub width: usize,
     pub players: Vec<Player>,
+    pub explosions: Vec<Coord>,
     // the turn number, starts at 0 and increments every turn. One turn is everybody making a move.
     pub bombs: Vec<Bomb>, // List of bombs on the map
     command_factory: Arc<dyn CommandFactory>,
@@ -37,8 +43,19 @@ impl Map {
             height: 0,
             players: Vec::new(),
             bombs: Vec::new(),
+            explosions: Vec::new(),
             command_factory: factory,
         }
+    }
+
+    pub fn to_json(&self) -> serde_json::Value {
+        let grid_2d: Vec<Vec<char>> = (0..self.height)
+            .map(|row| self.grid[row * self.width..(row + 1) * self.width].to_vec())
+            .collect();
+
+        serde_json::json!(MapGridSnapshot {
+            grid: grid_2d,
+        })
     }
 
     pub fn build(mut self) -> Self {

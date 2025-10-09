@@ -11,6 +11,7 @@ use crate::{
 use crate::bot::bot::Bot;
 use crate::map::structs::map_config::MapConfig;
 
+
 pub struct Game {
     pub map: Map,
     bots: Vec<Box<dyn Bot>>,
@@ -22,7 +23,7 @@ pub struct Game {
     pub turn: usize,
 
     // history of handles player actions, it is deterministic, so it can be replayed.
-    pub player_actions: Vec<(usize, Command)>,
+    pub player_actions: Vec<Vec<Command>>,
 
     // if the winner is determined, it will be set to Some(index of the winner)
     pub winner: Option<usize>,
@@ -44,38 +45,49 @@ impl Game {
     /// # Returns
     ///
     /// A game result object that contains the winner and the history of player actions.
-    pub fn build(width: usize, height: usize, players: Vec<Box<dyn Bot>>) -> Game {
-        // Create a new game instance with the given width, height, and players.
-        let mut game = Game::new(width, height, players);
-        game.init();
-        game
-    }
-
-    fn new(width: usize, height: usize, players: Vec<Box<dyn Bot>>) -> Self {
-        let player_count = players.len();
-
-        let map_settings = MapConfig {
-            bomb_timer: 4,
-            bomb_radius: 3,
-            endgame: 500,
-            width,
-            height,
-            player_names: players.iter().map(|bot| bot.name().to_string()).collect(),
+    pub fn build(
+        width: Option<usize>,
+        height: Option<usize>,
+        bots: Vec<Box<dyn Bot>>,
+        map_settings: Option<MapConfig>,
+    ) -> Self {
+        let map = if let Some(settings) = map_settings {
+            Map::new(settings, Arc::new(crate::map::factories::command_factory::DefaultCommandFactory)).build()
+        } else {
+            let map_settings = MapConfig {
+                bomb_timer: 4,
+                bomb_radius: 3,
+                endgame: 500,
+                width: width.expect("width required for new game"),
+                height: height.expect("height required for new game"),
+                player_names: bots.iter().map(|b| b.name().to_string()).collect(),
+            };
+            Map::new(map_settings, Arc::new(crate::map::factories::command_factory::DefaultCommandFactory)).build()
         };
 
-        let  map = Map::new(map_settings, Arc::new(crate::map::factories::command_factory::DefaultCommandFactory)).build();
+        Game::from_map(map, bots)
+    }
 
-        Game {
+    pub fn from_map(map: Map, bots: Vec<Box<dyn Bot>>) -> Self {
+        let player_count = map.map_settings.player_names.len();
+
+        let mut game = Game {
             map,
-            bots: players,
+            bots,
             player_count,
             turn: 0,
-            player_actions: Vec::new(),
+            player_actions: vec![Vec::new(); player_count],
             winner: None,
-            // initialize alive player and shuffle them
-            alive_players: Vec::new(),
+            alive_players: (0..player_count).collect(),
             display: Box::new(ConsoleDisplay),
+        };
+
+        // Only initialize bots if they exist
+        if !game.bots.is_empty() {
+            game.init();
         }
+
+        game
     }
 
     fn init(&mut self) {
@@ -93,21 +105,20 @@ impl Game {
         while self.winner.is_none() {
             self.run_round(None, None, None);
         }
+
         GameResult::build(self)
     } // loop until a winner is set
 
-    pub fn replay(&mut self, commands: &Vec<Command>) -> GameResult {
+    pub fn replay(&mut self, commands: &Vec<Vec<Command>>) -> GameResult {
         while self.winner.is_none() {
             self.run_round(None, Some(commands), None);
         }
+
         GameResult::build(self)
     }
 
     pub fn winner_name(&self) -> Option<String> {
-        match self.winner {
-            None => None,
-            Some(x) => self.map.get_player_name(x),
-        }
+        self.winner.and_then(|x| self.map.get_player_name(x))
     }
 
     /// run a single turn for the game. Has a callback for player actions.
@@ -116,7 +127,7 @@ impl Game {
     pub fn run_round(
         &mut self,
         progress_callback: Option<&mut dyn FnMut(&GameProgress)>,
-        replay_commands: Option<&Vec<Command>>,
+        replay_commands: Option<&Vec<Vec<Command>>>,
         logging_callback: Option<&mut dyn FnMut(String)>,
     ) -> bool {
         // This method will run a round of the game.
@@ -127,30 +138,29 @@ impl Game {
 
         // Process player actions for the current turn
         for player_index in 0..self.alive_players.len() {
-            let bot = self
-                .bots
-                .get_mut(player_index)
-                .expect("Bot not found for player index");
-            let loc = self.map.get_player(player_index).unwrap().position;
-
-            // if the game is a replay, take the move from the Vec
-            let bot_move;
-            if let Some(replay_commands) = replay_commands {
-                bot_move = replay_commands[player_index];
+            let command = if let Some(replay) = replay_commands {
+                // 🟢 REPLAY MODE: use pre-recorded commands only
+                replay[player_index][self.turn]
             } else {
-                bot_move = bot.get_move(&self.map, loc); // Call the provided callback to get the player's command
-            }
+                // 🎮 NORMAL MODE: ask bots for their next move
+                let bot = self
+                    .bots
+                    .get_mut(player_index)
+                    .expect("Bot not found for player index");
+                let loc = self.map.get_player(player_index).unwrap().position;
 
-            self.player_actions.push((player_index, bot_move));
+                let new_command = bot.get_move(&self.map, loc);
+                self.player_actions[player_index].push(new_command);
+                new_command
+            };
 
-            // handle the command
-            self.map.perform_move(player_index, bot_move);
+            self.map.perform_move(player_index, command);
 
-            // Check for winner after processing all actions
             if self.check_winner() {
                 return true;
             }
         }
+
 
         // process bombs and update the map
         if self.process_bombs(&logging_callback) {
