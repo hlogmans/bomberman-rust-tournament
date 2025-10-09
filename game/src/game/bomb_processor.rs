@@ -22,6 +22,9 @@ impl BombProcessor {
             .flat_map(|bomb| Self::bomb_explosion_locations(bomb, map))
             .collect::<Vec<_>>();
 
+        //TODO: find faster solution than cloning
+        map.explosions = affected_tiles.clone();
+
         for tile in affected_tiles {
             map.clear_destructable(tile);
 

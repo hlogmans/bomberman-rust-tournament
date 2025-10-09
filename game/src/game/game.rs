@@ -1,6 +1,5 @@
 use std::sync::Arc;
 use rand::seq::SliceRandom;
-use serde::Serialize;
 use crate::game::bomb_processor::BombProcessor;
 
 use crate::{
@@ -12,11 +11,6 @@ use crate::{
 use crate::bot::bot::Bot;
 use crate::map::structs::map_config::MapConfig;
 
-#[derive(Serialize)]
-pub struct GameReplaySnapshot {
-    pub turn: usize,
-    pub map: serde_json::Value,
-}
 
 pub struct Game {
     pub map: Map,

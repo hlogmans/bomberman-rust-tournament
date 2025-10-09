@@ -5,7 +5,7 @@ use rand::prelude::SliceRandom;
 use game::bot::bot::{Bot, BotConstructor};
 use game::game::game::Game;
 use game::game::game_result::GameResult;
-use game::game::replay_engine::ReplayEngine;
+use game::game::replay_engine::{GameReplaySnapshot, ReplayEngine};
 use crate::tournament_result::{Score, TournamentResult};
 
 pub fn run_tournament(bot_constructors: &[BotConstructor], round_counter: Option<Arc<AtomicUsize>>, duration: Duration) -> TournamentResult {
@@ -57,11 +57,11 @@ pub fn run_game(bots: Vec<Box<dyn Bot>>) -> GameResult {
     Game::build(Some(11), Some(11), bots, None).run()
 }
 
-pub fn replay(game_result: &GameResult) -> String {
+pub fn replay(game_result: &GameResult) -> GameReplaySnapshot {
     let mut game = Game::build(None, None, Vec::new(), Some(game_result.game_settings.clone()));
     let mut replay_engine = ReplayEngine::new(&mut game);
-    let replay_json = replay_engine.to_json(&game_result.replay_data);
-    serde_json::to_string(&replay_json).unwrap()
+
+    return replay_engine.to_snapshot(&game_result.replay_data);
 }
 
 pub fn update_scores(game_result: &GameResult, bot_names: &[String]) -> Vec<Score> {

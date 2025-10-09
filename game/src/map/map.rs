@@ -27,6 +27,7 @@ pub struct Map {
     pub height: usize,
     pub width: usize,
     pub players: Vec<Player>,
+    pub explosions: Vec<Coord>,
     // the turn number, starts at 0 and increments every turn. One turn is everybody making a move.
     pub bombs: Vec<Bomb>, // List of bombs on the map
     command_factory: Arc<dyn CommandFactory>,
@@ -42,6 +43,7 @@ impl Map {
             height: 0,
             players: Vec::new(),
             bombs: Vec::new(),
+            explosions: Vec::new(),
             command_factory: factory,
         }
     }

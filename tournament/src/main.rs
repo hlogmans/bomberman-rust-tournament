@@ -79,7 +79,7 @@ fn main() {
 
     if let Some(ref result) = grand_totals.most_interesting {
         println!("\nMost interesting replay:");
-        //println!("{}", runner::tournament::replay(result));
+        //let x = runner::tournament::replay(result); example
     } else {
         println!("No interesting game recorded.");
     }
