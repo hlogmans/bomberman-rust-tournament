@@ -14,7 +14,7 @@ use crate::map::structs::map_config::MapConfig;
 
 pub struct Game {
     pub map: Map,
-    pub bots: Vec<Box<dyn Bot>>,
+    bots: Vec<Box<dyn Bot>>,
     display: Box<dyn MapDisplay>,
 
     #[allow(dead_code)]
