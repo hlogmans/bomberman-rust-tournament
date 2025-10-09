@@ -8,6 +8,7 @@ game = { path = "../game" }   # depends on the game library crate
 bots = { path = "../bots" }   # depends on the bot library crate
 num_cpus = "1.17"             # optional, for thread count detection
 rand = "0.8"
+serde_json = "1.0.145"
 
 [[bench]]
 name = "tournament_benchmark"
