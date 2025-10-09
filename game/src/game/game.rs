@@ -197,11 +197,7 @@ impl Game {
             } else {
                 // If no valid shrink location is found, we can handle it as needed.
                 // For now, we will just log an error or panic.
-                eprintln!("No valid shrink location found for turn {}", self.turn);
-                eprintln!("players {}", self.alive_players.len());
-                eprintln!("width {}", self.map.map_settings.width);
-                eprintln!("height {}", self.map.map_settings.height);
-                return true;
+                panic!("No valid shrink location found for turn {}", self.turn);
             }
 
             // set map location to wall
