@@ -46,7 +46,7 @@ pub fn Game() -> impl IntoView {
         .map(|b| b.name().split_whitespace().next().unwrap().to_string())
         .collect::<Vec<_>>();
 
-    let game_result = run_game(bots_in_game);
+    let game_result = run_game(bots_in_game, 11);
     let game_replay = replay(&game_result);
     let (count, set_count) = signal(0);
 

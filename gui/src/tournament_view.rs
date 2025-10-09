@@ -13,15 +13,15 @@ use runner::tournament::*;
 use runner::tournament_result::{Score, TournamentResult};
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
-
+use runner::factories::game_config_factory::ConfigFactory;
 
 #[component]
 pub fn Tournament() -> impl IntoView {
 
     let counter = Arc::new(AtomicUsize::new(0));
-
+    
     let bot_constructors = available_bots();
-    let result_tournament = run_tournament_wasm(&bot_constructors, Some(counter), 10000.0);
+    let result_tournament = run_tournament_wasm(&bot_constructors, Some(counter), 10000.0, ConfigFactory::generate_tournament_configs());
 
     view! {
 <ul>

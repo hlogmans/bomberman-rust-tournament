@@ -118,19 +118,35 @@ impl ScoutBot {
         ]
     }
 
-    fn get_correct_init_list(loc: Coord, height: i32) -> Vec<Command> {
-        if loc.row.get() < height as usize / 2 {
-            ScoutBot::hardcoded_script()
-        } else {
-            ScoutBot::hardcoded_script()
+    fn get_correct_init_list(loc: Coord, height: i32, width: i32) -> Vec<Command> {
+        // Start with the base script
+        let mut script = ScoutBot::hardcoded_script();
+
+        // Adjust for row
+        if loc.row.get() >= height as usize / 2 {
+            script = script
                 .into_iter()
                 .map(|c| match c {
                     Command::Up => Command::Down,
                     Command::Down => Command::Up,
                     other => other,
                 })
-                .collect()
+                .collect();
         }
+
+        // Adjust for column
+        if loc.col.get() >= width as usize / 2 {
+            script = script
+                .into_iter()
+                .map(|c| match c {
+                    Command::Left => Command::Right,
+                    Command::Right => Command::Left,
+                    other => other,
+                })
+                .collect();
+        }
+
+        script
     }
 }
 
@@ -148,7 +164,9 @@ impl Bot for ScoutBot {
     fn get_move(&mut self, _map: &Map, _player_location: Coord) -> Command {
         if !self.initialized {
             let height = self.map_settings.height as i32;
-            self.command_list = ScoutBot::get_correct_init_list(_player_location, height);
+            let width = self.map_settings.width as i32;
+
+            self.command_list = ScoutBot::get_correct_init_list(_player_location, height, width);
 
             self.initialized = true;
             self.current_index = 0;
