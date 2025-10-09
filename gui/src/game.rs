@@ -7,10 +7,11 @@ use game::game::game::Game;
 use gloo_timers::callback::Interval;
 use crate::components::grid::Grid;
 use gloo_timers::future::sleep;
-use std::time::Duration;
 use wasm_bindgen_futures::spawn_local;
 use crate::components::player_icon::PlayerIcon;
-
+use runner::tournament::*;
+use runner::tournament_result::{Score, TournamentResult};
+use std::time::Duration;
 
 #[derive(Params, PartialEq)]
 struct GameParams {
@@ -35,7 +36,7 @@ pub fn Game() -> impl IntoView {
     };
     let bots_vec = bots();
 
-        let bot_constructors = available_bots();
+    let bot_constructors = available_bots();
     let a_idx = *bots_vec.get(0).unwrap_or(&0);
     let b_idx = *bots_vec.get(1).unwrap_or(&1);
     let bots_in_game: Vec<Box<dyn Bot>> =
@@ -45,23 +46,22 @@ pub fn Game() -> impl IntoView {
         .map(|b| b.name().split_whitespace().next().unwrap().to_string())
         .collect::<Vec<_>>();
 
-
+    let game_result = run_game(bots_in_game);
+    let game_replay = replay(&game_result);
     let (count, set_count) = signal(0);
-    let mut game_run = Game::build(11, 11, bots_in_game);
-    let (game_state, set_game_state) = signal(game_run.get_game_state());
+
+
+    let (game_state, set_game_state) = signal(game_replay.turns[0].clone());
     let (winner_signal, set_winner) = signal(None::<String>);
 
     spawn_local(async move {
-        while game_run.winner.is_none() {
-            game_run.run_round(None, None, None);
-            set_game_state.set(game_run.get_game_state());
+        for round in game_replay.turns {
             set_count.set(count.get() + 1);
+            set_game_state.set(round.clone());
             sleep(Duration::from_millis(250)).await;
-        }
 
-        if let Some(winner) = &game_run.winner_name() {
-            set_winner.set(Some(winner.to_string()));
         }
+        set_winner.set(Some(game_result.winner.to_string()));
     });
 
     view! {

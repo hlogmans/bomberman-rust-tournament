@@ -1,6 +1,7 @@
 mod app;
 mod home;
 mod game;
+mod tournament_view;
 mod components;
 
 use app::App;

@@ -7,6 +7,7 @@ use leptos_router::{
 
 use crate::home::Home;
 use crate::game::Game;
+use crate::tournament_view::Tournament;
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -26,6 +27,7 @@ pub fn App() -> impl IntoView {
                 <Routes fallback=|| "Page not found.">
                     <Route path=StaticSegment("") view=Home/>
                     <Route path=StaticSegment("game") view=Game/>
+                    <Route path=StaticSegment("tournament") view=Tournament/>
                 </Routes>
             </main>
         </Router>

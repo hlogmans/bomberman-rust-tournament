@@ -10,6 +10,7 @@ impl BombProcessor {
         let exploding_bombs = map.get_exploding_bombs();
 
         if exploding_bombs.is_empty() {
+            map.explosions = Vec::new();
             return false;
         }
 

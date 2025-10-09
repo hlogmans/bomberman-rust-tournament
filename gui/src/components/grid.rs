@@ -1,10 +1,10 @@
 use leptos::*;
 use leptos::prelude::*;
+use game::game::replay_engine::MapReplaySnapshot;
 use crate::components::tile::Tile;
-use game::game::game_state::GameState;
 
 #[component]
-pub fn Grid(game_state: ReadSignal<GameState>) -> impl IntoView {
+pub fn Grid(game_state: ReadSignal<MapReplaySnapshot>) -> impl IntoView {
     let width = 11;
 
     view! {

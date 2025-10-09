@@ -11,6 +11,10 @@ pub fn Home() -> impl IntoView {
     provide_context(selected_bots);
     provide_context(set_selected_bots);
 
+
+        
+
+
     view! {
         <div class="flex items-center justify-center gap-8 p-6">
             <BombermanLogo />

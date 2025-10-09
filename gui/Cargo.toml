@@ -13,5 +13,6 @@ gloo-timers = { version = "0.3", features = ["futures"] }
 
 bots = {path = "../bots"}
 game = {path = "../game"}
+runner = {path = "../tournament"}
 wasm-bindgen-futures = "0.4.54"
 
