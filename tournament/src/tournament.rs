@@ -9,6 +9,7 @@ use game::game::game_result::GameResult;
 use game::game::replay_engine::{GameReplaySnapshot, ReplayEngine};
 use crate::factories::game_config_factory::{GameConfig};
 use crate::tournament_result::{Score, TournamentResult};
+use js_sys::Date;
 
 
 /// Runs a tournament for a given duration with the specified number of players per game.
@@ -19,31 +20,47 @@ pub fn run_tournament(bot_constructors: &[BotConstructor], round_counter: Option
 
     while start.elapsed() < duration {
         let config = config_iter.next().unwrap();
-
-        let game_bots = prepare_bots(bot_constructors, config.num_players);
-
-        // Collect names as Strings (we own them)
-        let names: Vec<String> = game_bots.iter().map(|b| b.name()).collect();
-
-        let game_result = run_game(game_bots, config.size);
-        let scores_vec = update_scores(&game_result, &names);
-
-        if tournament_result.most_interesting.is_none() || game_result.replay_data[0].len() > tournament_result.most_interesting.as_ref().unwrap().replay_data[0].len() {
-            tournament_result.most_interesting = Some(game_result);
-        }
-
-        for (name, score) in names.iter().zip(scores_vec.iter()) {
-            tournament_result.add_score(name, *score);
-        }
-
-        if let Some(counter) = &round_counter {
-            counter.fetch_add(1, Ordering::Relaxed);
-        }
-
-        tournament_result.total_games += 1;
+        run_tournament_game(&mut tournament_result, bot_constructors, &round_counter, config);
     }
 
     tournament_result
+}
+
+pub fn run_tournament_wasm(bot_constructors: &[BotConstructor], round_counter: Option<Arc<AtomicUsize>>, duration_ms: f64, game_config: Vec<GameConfig>) -> TournamentResult {
+    let mut tournament_result = TournamentResult::new();
+    let start = Date::now();
+    let mut config_iter = game_config.iter().cycle();
+
+    while Date::now() - start > duration_ms {
+        let config = config_iter.next().unwrap();
+        run_tournament_game(&mut tournament_result, bot_constructors, &round_counter, config);
+    }
+
+    tournament_result
+}
+
+pub fn run_tournament_game(tournament_result: &mut TournamentResult, bot_constructors: &[BotConstructor], round_counter: &Option<Arc<AtomicUsize>>, config: &GameConfig) {
+    let game_bots = prepare_bots(bot_constructors, config.num_players);
+
+    // Collect names as Strings (we own them)
+    let names: Vec<String> = game_bots.iter().map(|b| b.name()).collect();
+
+    let game_result = run_game(game_bots, config.size);
+    let scores_vec = update_scores(&game_result, &names);
+
+    if tournament_result.most_interesting.is_none() || game_result.replay_data[0].len() > tournament_result.most_interesting.as_ref().unwrap().replay_data[0].len() {
+        tournament_result.most_interesting = Some(game_result);
+    }
+
+    for (name, score) in names.iter().zip(scores_vec.iter()) {
+        tournament_result.add_score(name, *score);
+    }
+
+    if let Some(counter) = &round_counter {
+        counter.fetch_add(1, Ordering::Relaxed);
+    }
+
+    tournament_result.total_games += 1;
 }
 
 pub fn prepare_bots(bot_constructors: &[BotConstructor], player_count: usize) -> Vec<Box<dyn Bot>> {

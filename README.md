@@ -20,3 +20,9 @@ Then run those commands in the terminal:
 
 == How to run
 - cargo run --release --bin rust-bomberman
+
+
+
+== Gui
+- cd ./gui
+- trunk serve --open

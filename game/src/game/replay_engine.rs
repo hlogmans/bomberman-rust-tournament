@@ -11,7 +11,7 @@ pub struct GameReplaySnapshot {
     pub turns: Vec<MapReplaySnapshot>,
 
 }
-
+#[derive(Clone)]
 pub struct MapReplaySnapshot {
     pub turn: usize,
     pub players: Vec<Player>,
@@ -43,6 +43,7 @@ impl<'a> ReplayEngine<'a> {
 
         // 🟢 Record map state each turn
         while !has_winner {
+            has_winner = self.game.run_round(None, Some(commands), None);
             // Take snapshot BEFORE running round, so it captures start-of-turn state
             turn_snapshots.push(MapReplaySnapshot {
                 turn: self.game.turn,
@@ -53,7 +54,6 @@ impl<'a> ReplayEngine<'a> {
 
             });
 
-            has_winner = self.game.run_round(None, Some(commands), None);
         }
 
         // 🟣 Wrap all turn snapshots + map settings in a single game replay

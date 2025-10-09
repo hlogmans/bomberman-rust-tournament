@@ -3,6 +3,9 @@ members = [
     "game",
     "bots", "tournament",
 ]
+exclude = [
+    "gui"
+]
 
 default-members = ["tournament"]
 

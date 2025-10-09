@@ -1,0 +1,18 @@
+[package]
+name = "gui"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+console_error_panic_hook = "0.1.7"
+leptos = { version = "0.8.10", features = ["csr"] }
+leptos_meta = "0.8.5"
+leptos_router = "0.8.8"
+gloo-timers = { version = "0.3", features = ["futures"] }
+
+
+bots = {path = "../bots"}
+game = {path = "../game"}
+runner = {path = "../tournament"}
+wasm-bindgen-futures = "0.4.54"
+
