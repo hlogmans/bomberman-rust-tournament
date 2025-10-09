@@ -19,7 +19,7 @@ impl ConfigFactory {
     /// Generates all tournament configs with given player counts and map sizes
     pub fn generate_tournament_configs() -> Vec<GameConfig> {
         let player_counts = [2, 3, 4];
-        let map_sizes = odd_numbers_in_range(5, 19);
+        let map_sizes = odd_numbers_in_range(7, 20);
 
         let mut configs = Vec::new();
 

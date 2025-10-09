@@ -15,11 +15,10 @@ use crate::tournament_result::{Score, TournamentResult};
 pub fn run_tournament(bot_constructors: &[BotConstructor], round_counter: Option<Arc<AtomicUsize>>, duration: Duration, game_config: Vec<GameConfig>) -> TournamentResult {
     let mut tournament_result = TournamentResult::new();
     let start = Instant::now();
+    let mut config_iter = game_config.iter().cycle();
 
-    for config in game_config.iter().cycle() {
-        if start.elapsed() > duration {
-            break; // stop when time limit is reached
-        }
+    while start.elapsed() < duration {
+        let config = config_iter.next().unwrap();
 
         let game_bots = prepare_bots(bot_constructors, config.num_players);
 
