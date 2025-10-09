@@ -13,10 +13,10 @@ fn tournament_benchmark(c: &mut Criterion) {
     config.bench_function("run_tournament", |b| {
         b.iter(|| {
             let bots = available_bots();
-            let game_bots = prepare_bots(&bots);
+            let game_bots = prepare_bots(&bots, 2);
 
 
-            tournament::run_game(game_bots);
+            tournament::run_game(game_bots, 2);
         });
     });
 

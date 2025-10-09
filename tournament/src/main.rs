@@ -6,6 +6,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use bots::available_bots;
+use runner::factories::game_config_factory::ConfigFactory;
 use runner::tournament::run_tournament;
 use runner::tournament_result::TournamentResult;
 
@@ -50,7 +51,7 @@ fn main() {
         .into_iter()
         .map(|counter| {
             let bot_constructors = available_bots();
-            thread::spawn(move || run_tournament(&bot_constructors, Some(counter), duration))
+            thread::spawn(move || run_tournament(&bot_constructors, Some(counter), duration, ConfigFactory::generate_tournament_configs()))
         })
         .collect();
 
@@ -75,12 +76,5 @@ fn main() {
             "{bot}: WinPercentage: {:.1}% {score:?}",
             (score.wins as f64 / score.total_games as f64) * 100.0
         );
-    }
-
-    if let Some(ref result) = grand_totals.most_interesting {
-        println!("\nMost interesting replay:");
-        //let x = runner::tournament::replay(result); example
-    } else {
-        println!("No interesting game recorded.");
     }
 }
