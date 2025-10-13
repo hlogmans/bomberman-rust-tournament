@@ -1,8 +1,11 @@
+use serde::{Deserialize, Serialize};
+
 use crate::map::structs::map_config::MapConfig;
 use crate::game::game::Game;
 use crate::map::enums::command::Command;
 
 /// Represents the result of a game.
+#[derive(Clone, Serialize, Deserialize)]
 pub struct GameResult {
     pub winner: String,
     pub replay_data: Vec<Vec<Command>>,

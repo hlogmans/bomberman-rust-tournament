@@ -15,4 +15,8 @@ bots = {path = "../bots"}
 game = {path = "../game"}
 runner = {path = "../tournament"}
 wasm-bindgen-futures = "0.4.54"
+gloo = "0.11.0"
+gloo-worker = {version = "0.5.0", features = ["futures"] }
+serde = { version = "1.0.228", features = ["derive"] }
+futures = "0.3.31"
 

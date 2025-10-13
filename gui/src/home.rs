@@ -3,6 +3,7 @@ use leptos::prelude::*;
 use crate::components::bomberman_logo::BombermanLogo;
 use crate::components::bot_selector::BotSelector;
 use crate::components::start_game_link::StartGameLink;
+use crate::components::start_tournament_link::StartTournamentLink;
 
 
 #[component]
@@ -21,5 +22,6 @@ pub fn Home() -> impl IntoView {
             <BotSelector />
         </div>
         <StartGameLink />
+        <StartTournamentLink />
     }
 }

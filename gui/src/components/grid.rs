@@ -4,9 +4,7 @@ use game::game::replay_engine::MapReplaySnapshot;
 use crate::components::tile::Tile;
 
 #[component]
-pub fn Grid(game_state: ReadSignal<MapReplaySnapshot>) -> impl IntoView {
-    let width = 11;
-
+pub fn Grid(game_state: ReadSignal<MapReplaySnapshot>, width: usize) -> impl IntoView {
     view! {
         <div
             class="grid grid-cols-(--my-grid-cols) border-white border-2"

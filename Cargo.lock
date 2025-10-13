@@ -443,6 +443,7 @@ dependencies = [
  "js-sys",
  "num_cpus",
  "rand",
+ "serde",
  "serde_json",
 ]
 

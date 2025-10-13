@@ -1,10 +1,4 @@
-mod app;
-mod home;
-mod game;
-mod tournament_view;
-mod components;
-
-use app::App;
+use gui::app::App;
 use leptos::{logging, mount};
 
 pub fn main() {

@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
+
 #[allow(dead_code)]
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct MapConfig {
     pub width: usize,
     pub height: usize,
