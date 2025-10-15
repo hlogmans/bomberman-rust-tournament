@@ -42,42 +42,10 @@ pub fn Game() -> impl IntoView {
     let b_idx = *bots_vec.get(1).unwrap_or(&1);
     let bots_in_game: Vec<Box<dyn Bot>> =
         vec![bot_constructors[a_idx](), bot_constructors[b_idx]()];
-    let bot_names = bots_in_game
-        .iter()
-        .map(|b| b.name().split_whitespace().next().unwrap().to_string())
-        .collect::<Vec<_>>();
 
-    let game_result = run_game(bots_in_game, 11);
+    let game_result = run_game(bots_in_game, 19);
    
     view! {
-        {
-                move || {
-                    bot_names.iter().enumerate().map(|(i, name)| {
-                        // For all but the last player, we’ll show a “VS” after their block
-                        let has_next = i < bot_names.len() - 1;
-
-                        view! {
-                            <div class="flex flex-col items-center">
-                                <div class="flex flex-row items-center justify-center space-x-2">
-                                    <div class="w-16 h-16 object-contain">
-                                        <PlayerIcon index={i} /> 
-                                    </div>
-                                    
-                                    <p class="text-lg font-semibold text-center">{name.to_string()}</p>
-                                </div>
-
-                                {move || if has_next {
-                                    view! {
-                                        <p class="text-xl font-bold my-4">"VS"</p>
-                                    }.into_any()
-                                } else {
-                                    view! {}.into_any()
-                                }}
-                            </div>
-                        }
-                    }).collect_view()
-                }
-            }
         <RunGameResult game_result=game_result/>
     }
 }

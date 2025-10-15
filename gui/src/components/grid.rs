@@ -7,7 +7,7 @@ use crate::components::tile::Tile;
 pub fn Grid(game_state: ReadSignal<MapReplaySnapshot>, width: usize) -> impl IntoView {
     view! {
         <div
-            class="grid grid-cols-(--my-grid-cols) border-white border-2"
+            class="grid grid-cols-(--my-grid-cols) "
             style=move || format!("--my-grid-cols: repeat({}, minmax(0, 1fr));", width)
         >
             { move || {

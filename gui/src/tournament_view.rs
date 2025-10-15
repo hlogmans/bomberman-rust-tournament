@@ -71,9 +71,8 @@ pub fn Tournament() -> impl IntoView {
                                 }
                             </ul>
                         </div>
-                        <div class="flex w-max">
+
                             <RunGameResult game_result=result_tournament.most_interesting.expect("Most interesting game")/>
-                        </div>
 
                     }.into_any()
                 } else {
