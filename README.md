@@ -23,6 +23,15 @@ Then run those commands in the terminal:
 
 
 
-== Gui
-- cd ./gui
-- trunk serve --open
+== Web
+Install cargo-leptos and add web assembly support:
+- cargo install --locked cargo-leptos
+- rustup target add wasm32-unknown-unknown
+
+Run with hot reload:
+- cd ./web
+- cargo leptos watch
+
+Run with better performance:
+- cargo leptos build --release
+- cargo leptos serve --release

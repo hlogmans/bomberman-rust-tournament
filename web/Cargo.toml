@@ -1,0 +1,69 @@
+[package]
+name = "web"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+leptos = { version = "0.8.0" }
+leptos_router = { version = "0.8.0" }
+axum = { version = "0.8.0", optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
+leptos_axum = { version = "0.8.0", optional = true }
+leptos_meta = { version = "0.8.0" }
+tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
+wasm-bindgen = { version = "=0.2.104", optional = true }
+gloo-timers = { version = "0.3.0", features = ["futures"] }
+wasm-bindgen-futures = "0.4.54"
+rand = "0.9.2"
+getrandom = { version = "0.3", default-features = false, features = ["wasm_js"] }
+bots = {path = "../bots"}
+game = {path = "../game"}
+runner = {path = "../tournament"}
+reactive_stores = "0.2.5"
+num_cpus = "1.17.0"
+
+[features]
+hydrate = [
+    "leptos/hydrate",
+    "dep:console_error_panic_hook",
+    "dep:wasm-bindgen",
+]
+ssr = [
+    "dep:axum",
+    "dep:tokio",
+    "dep:leptos_axum",
+    "leptos/ssr",
+    "leptos_meta/ssr",
+    "leptos_router/ssr",
+]
+
+# Defines a size-optimized profile for the WASM bundle in release mode
+[profile.wasm-release]
+inherits = "release"
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[package.metadata.leptos]
+tailwind-input-file = "input.css"
+output-name = "web"
+site-root = "target/site"
+site-pkg-dir = "pkg"
+assets-dir = "public"
+site-addr = "127.0.0.1:3000"
+reload-port = 3001
+end2end-cmd = "npx playwright test"
+end2end-dir = "end2end"
+browserquery = "defaults"
+env = "DEV"
+bin-features = ["ssr"]
+bin-default-features = false
+lib-features = ["hydrate"]
+lib-default-features = false
+lib-profile-release = "wasm-release"
+
+watch-additional-files = ["src", "../bots/src"]
