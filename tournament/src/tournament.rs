@@ -31,7 +31,7 @@ pub fn run_tournament_wasm(bot_constructors: &[BotConstructor], round_counter: O
     let start = Date::now();
     let mut config_iter = game_config.iter().cycle();
 
-    while Date::now() - start > duration_ms {
+    while Date::now() - start <= duration_ms {
         let config = config_iter.next().unwrap();
         run_tournament_game(&mut tournament_result, bot_constructors, &round_counter, config);
     }

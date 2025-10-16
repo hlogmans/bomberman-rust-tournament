@@ -1,15 +1,13 @@
 use leptos::*;
 use leptos::prelude::*;
 use game::game::replay_engine::MapReplaySnapshot;
-use crate::components::tile::Tile;
+use super::tile::Tile;
 
 #[component]
-pub fn Grid(game_state: ReadSignal<MapReplaySnapshot>) -> impl IntoView {
-    let width = 11;
-
+pub fn Grid(game_state: ReadSignal<MapReplaySnapshot>, width: usize) -> impl IntoView {
     view! {
         <div
-            class="grid grid-cols-(--my-grid-cols) border-white border-2"
+            class="grid grid-cols-(--my-grid-cols) "
             style=move || format!("--my-grid-cols: repeat({}, minmax(0, 1fr));", width)
         >
             { move || {

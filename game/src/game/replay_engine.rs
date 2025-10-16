@@ -6,6 +6,7 @@ use crate::map::enums::command::Command;
 use crate::map::player::Player;
 use crate::map::structs::map_config::MapConfig;
 
+#[derive(Clone)]
 pub struct GameReplaySnapshot {
     pub map_settings: MapConfig,
     pub turns: Vec<MapReplaySnapshot>,
@@ -42,6 +43,14 @@ impl<'a> ReplayEngine<'a> {
         let mut turn_snapshots = Vec::new();
 
         // 🟢 Record map state each turn
+        turn_snapshots.push(MapReplaySnapshot {
+            turn: self.game.turn,
+            players: self.game.map.players.clone(),
+            bombs: self.game.map.bombs.clone(),
+            grid: self.game.map.grid.clone(),
+            explosions: self.game.map.explosions.clone(),
+
+        });
         while !has_winner {
             has_winner = self.game.run_round(None, Some(commands), None);
             // Take snapshot BEFORE running round, so it captures start-of-turn state

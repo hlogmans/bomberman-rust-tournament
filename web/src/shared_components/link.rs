@@ -2,15 +2,15 @@ use leptos::*;
 use leptos::prelude::*;
 
 #[component]
-pub fn StartGameLink() -> impl IntoView {
-    let selected_bots = use_context::<ReadSignal<Vec<usize>>>()
-        .expect("No selected_bots context found");
+pub fn Link(
+    text: String, 
+    link: String,
+    #[prop(optional)] is_disabled: bool
+) -> impl IntoView {
     let navigate = leptos_router::hooks::use_navigate();
-    let is_disabled = move || selected_bots.get().len() != 2;
-
+    
     view! {
         <button
-            disabled=move || is_disabled()
             class="
                 inline-block
                 mt-6
@@ -31,19 +31,12 @@ pub fn StartGameLink() -> impl IntoView {
                 disabled:cursor-not-allowed
                 cursor-pointer
             "
+            disabled=is_disabled
             on:click=move |_| {
-                if !is_disabled() {
-                    let bots_param = selected_bots
-                        .get()
-                        .iter()
-                        .map(|i| i.to_string())
-                        .collect::<Vec<_>>()
-                        .join(",");
-                    navigate(&format!("/game?bots={bots_param}"),Default::default());
-                }
+                navigate(&format!("{}", link),Default::default());
             }
         >
-            "Fight!"
+            {text}
         </button>
     }
 }

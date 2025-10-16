@@ -1,13 +1,15 @@
 use std::collections::HashMap;
 use game::game::game_result::GameResult;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Score {
     pub wins: usize,
     pub losses: usize,
     pub total_games: usize,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct TournamentResult {
     pub most_interesting: Option<GameResult>,
     pub scores: HashMap<String, Score>,

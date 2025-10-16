@@ -1,12 +1,10 @@
 [workspace]
 members = [
+    "bots",
     "game",
-    "bots", "tournament",
+    "tournament",
 ]
-exclude = [
-    "gui"
-]
-
+exclude = ["web"]
 default-members = ["tournament"]
 
 [workspace.metadata.clippy]

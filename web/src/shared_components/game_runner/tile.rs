@@ -1,6 +1,6 @@
 use leptos::*;
 use leptos::prelude::*;
-use crate::components::player_icon::PlayerIcon;
+use super::player_icon::PlayerIcon;
 
 #[component]
 pub fn Tile(tile_type: char, player: Option<usize>, bomb: Option<usize>, explosion: Option<usize>) -> impl IntoView {
