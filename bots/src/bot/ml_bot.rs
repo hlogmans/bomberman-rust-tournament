@@ -368,6 +368,10 @@ impl Bot for MlBot {
         format!("{} ({})", self.name, self.id)
     }
 
+    fn get_debug_info(&self) -> String {
+       "test".to_string()
+    }
+
     fn start_game(&mut self, settings: &MapConfig, bot_id: usize) -> bool {
         self.id = bot_id;
         self.map_settings = settings.clone();
@@ -387,7 +391,6 @@ impl Bot for MlBot {
         }
         self.turn = self.turn + 1;
         let next_move = self.decide_move(map, _player_location);
-        //println!("{:?}", next_move);
         next_move
     }
 }
