@@ -24,6 +24,7 @@ pub struct Game {
 
     // history of handles player actions, it is deterministic, so it can be replayed.
     pub player_actions: Vec<Vec<Command>>,
+    pub debug_info: Vec<Vec<String>>,
 
     // if the winner is determined, it will be set to Some(index of the winner)
     pub winner: Option<usize>,
@@ -77,6 +78,7 @@ impl Game {
             player_count,
             turn: 0,
             player_actions: vec![Vec::new(); player_count],
+            debug_info: vec![Vec::new(); player_count],
             winner: None,
             alive_players: (0..player_count).collect(),
             display: Box::new(ConsoleDisplay),
@@ -151,6 +153,7 @@ impl Game {
 
                 let new_command = bot.get_move(&self.map, loc);
                 self.player_actions[player_index].push(new_command);
+                self.debug_info[player_index].push(bot.get_debug_info());
                 new_command
             };
 

@@ -23,8 +23,9 @@ Then run those commands in the terminal:
 
 
 
-== Web
+== Run with web gui:
 Install cargo-leptos and add web assembly support:
+- (for linux only) sudo dnf install -y perl pkg-config openssl-devel gcc make
 - cargo install --locked cargo-leptos
 - rustup target add wasm32-unknown-unknown
 

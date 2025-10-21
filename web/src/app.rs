@@ -34,7 +34,7 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
     view! {
         <Stylesheet id="leptos" href="/pkg/web.css"/>
-        <Title text="Bombercrabs"/>
+        <Title text="BURP"/>
         <Router>
             <main 
                 class="
