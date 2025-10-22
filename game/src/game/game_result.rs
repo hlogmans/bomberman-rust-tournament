@@ -9,6 +9,7 @@ use crate::map::enums::command::Command;
 pub struct GameResult {
     pub winner: String,
     pub replay_data: Vec<Vec<Command>>,
+    pub debug_data: Vec<Vec<String>>,
     pub game_settings: MapConfig,
     pub rounds: usize,
 }
@@ -21,6 +22,7 @@ impl GameResult {
         GameResult {
             winner,
             replay_data: game.player_actions.clone(),
+            debug_data: game.debug_info.clone(),
             game_settings,
             rounds: game.turn,
         }

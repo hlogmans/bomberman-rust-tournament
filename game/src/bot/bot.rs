@@ -30,6 +30,10 @@ pub trait Bot {
     fn start_game(&mut self, map_settings: &MapConfig, bot_id: usize) -> bool;
 
     fn get_move(&mut self, map: &Map, player_location: Coord) -> Command;
+
+    fn get_debug_info(&self) -> String {
+        "".to_string()
+    }
 }
 
 pub type BotConstructor = Box<dyn Fn() -> Box<dyn Bot> + Send + Sync>;
