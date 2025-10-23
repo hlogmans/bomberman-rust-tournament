@@ -1,9 +1,8 @@
 use super::fuzzy_core::FuzzyLogic;
 use super::fuzzy_input::FuzzyInput;
-use crate::bot::fuzzy_bot::fuzzy_logic::manhattan::manhattan;
-use crate::coord::Coord;
-use crate::map::{Command, Map};
 use std::cmp::PartialEq;
+use game::map::enums::command::Command;
+use crate::bot::fuzzy_logic::{fuzzy_movement, helper};
 
 #[derive(Debug, PartialEq)]
 pub enum Intent {
@@ -14,14 +13,13 @@ pub enum Intent {
 }
 
 pub fn decide(input: FuzzyInput) -> Intent {
-    let distance_to_closest_enemy =
-        determine_distance_to_closest_enemy(&input.map, input.bot_name, input.bot_id, input.current_position);
+    let distance_to_closest_enemy = helper::closest_enemy_distance(helper::get_enemy_positions(input.clone()), input.current_position.clone());
 
-    let close = FuzzyLogic::closeness(distance_to_closest_enemy, input.map_settings.bombradius);
+    let close = FuzzyLogic::closeness(distance_to_closest_enemy, input.map_settings.bomb_radius);
     let danger = FuzzyLogic::danger_level_at(
         input.current_position,
         &input.map,
-        input.map_settings.bombradius,
+        input.map_settings.bomb_radius,
     );
 
     let mut intent = Intent::Wait;
@@ -42,7 +40,7 @@ pub fn handle_intent(intent: Intent, input: FuzzyInput) -> Command {
         return Command::PlaceBomb;
     }
     if intent == Intent::Move {
-        return FuzzyLogic::handle_move_decision(input)
+        return fuzzy_movement::handle_move_decision(input)
     }
 
     if  intent == Intent::Flee {

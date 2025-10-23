@@ -3,5 +3,5 @@ pub mod fuzzy_input;
 pub mod fuzzy_core;
 mod manhattan;
 mod fuzzy_movement;
-mod helper;
+pub(crate) mod helper;
 

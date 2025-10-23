@@ -1,9 +1,12 @@
-use crate::bot::fuzzy_bot::fuzzy_logic::fuzzy_input::FuzzyInput;
-use crate::bot::fuzzy_bot::fuzzy_logic::helper;
-use crate::bot::fuzzy_bot::fuzzy_logic::manhattan::manhattan;
-use crate::coord::{Col, Coord, Row};
-use crate::game::map_settings::MapSettings;
-use crate::map::{Bomb, CellType, Command, Map};
+use game::coord::{Col, Coord, Row};
+use game::map::bomb::Bomb;
+use game::map::cell::CellType;
+use game::map::enums::command::Command;
+use game::map::map::Map;
+use crate::bot::fuzzy_logic::fuzzy_input::FuzzyInput;
+use crate::bot::fuzzy_logic::fuzzy_movement::get_command_to_move_to_coord;
+use crate::bot::fuzzy_logic::helper;
+use crate::bot::fuzzy_logic::manhattan::manhattan;
 
 pub struct FuzzyLogic;
 
@@ -39,7 +42,7 @@ impl FuzzyLogic {
                         let relevant_distance = radius * 3;
                         let dist_score = Self::closeness(distance_to_bomb, relevant_distance);
                         let time_score =
-                            Self::danger_level(bomb.timer, map.map_settings.bombtimer) as f64;
+                            Self::danger_level(bomb.timer, map.map_settings.bomb_timer) as f64;
                         total_danger += (dist_score * time_score).clamp(0.0, 1.0);
                     }
                 }
@@ -55,12 +58,10 @@ impl FuzzyLogic {
     }
 
     pub fn get_bomb_score(input: FuzzyInput) -> f64{
-        let closeness_score = Self::closeness(
+        Self::closeness(
             manhattan(input.current_position, Self::get_closest_player_coords(input.map, input.bot_name, input.bot_id, input.current_position)),
             input.map_settings.width - 1 + input.map_settings.height - 1,
-        );
-
-
+        )
     }
 
   
@@ -72,10 +73,10 @@ impl FuzzyLogic {
 
         for neighbour in neighbours {
             let score =
-                Self::danger_level_at(neighbour, input.map, input.map_settings.bombradius);
+                Self::danger_level_at(neighbour, input.map, input.map_settings.bomb_radius);
             if score < lowest_danger_score {
                 lowest_danger_score = score;
-                command = Self::get_command_for_coord(input.current_position, neighbour);
+                command = get_command_to_move_to_coord(input.current_position, neighbour);
             }
         }
 

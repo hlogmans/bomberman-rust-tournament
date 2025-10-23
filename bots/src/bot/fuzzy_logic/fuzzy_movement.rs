@@ -1,13 +1,16 @@
-use crate::bot::fuzzy_bot::fuzzy_logic::fuzzy_core::FuzzyLogic;
-use crate::bot::fuzzy_bot::fuzzy_logic::fuzzy_input::FuzzyInput;
-use crate::bot::fuzzy_bot::fuzzy_logic::{fuzzy_movement, helper};
-use crate::bot::fuzzy_bot::fuzzy_logic::manhattan::manhattan;
-use crate::coord::Coord;
-use crate::game::map_settings::MapSettings;
-use crate::map::{CellType, Command, Map};
+use game::coord::Coord;
+use game::map::cell::CellType;
+use game::map::enums::command::Command;
+use game::map::map::Map;
+use game::map::structs::map_config::MapConfig;
+use crate::bot::fuzzy_logic::fuzzy_input::FuzzyInput;
+use crate::bot::fuzzy_logic::fuzzy_movement;
+use crate::bot::fuzzy_logic::helper;
+use crate::bot::fuzzy_logic::fuzzy_core::FuzzyLogic;
+use crate::bot::fuzzy_logic::manhattan::manhattan;
 
 pub fn handle_move_decision(input: FuzzyInput) -> Command {
-    let neighbours = Self::get_neighbour_coords(input.current_position);
+    let neighbours = helper::get_neighbour_coords(input.current_position);
     let enemy_positions: Vec<Coord> = input
         .map
         .players
@@ -52,7 +55,7 @@ fn get_tile_score(
     coord: Coord,
     enemy_positions: &Vec<Coord>,
     current_position: Coord,
-    map_settings: &MapSettings,
+    map_settings: &MapConfig,
 ) -> f64 {
     let cell_type = helper::get_cell_type(helper::get_cell(map, coord));
 
@@ -60,7 +63,7 @@ fn get_tile_score(
         return f64::NEG_INFINITY; // not valid
     }
 
-    let danger_level = Self::danger_level_at(coord, map, map_settings.bombradius);
+    let danger_level = FuzzyLogic::danger_level_at(coord, map, map_settings.bomb_radius);
 
     let closest_enemy = enemy_positions
         .iter()
@@ -96,7 +99,7 @@ fn get_tile_score(
     final_score
 }
 
-fn get_command_to_move_to_coord(current_position: Coord, target_position: Coord) -> Command {
+pub fn get_command_to_move_to_coord(current_position: Coord, target_position: Coord) -> Command {
     let mut command = Command::Wait;
     if current_position.move_down().unwrap() == target_position {
         command = Command::Down;
