@@ -1,11 +1,11 @@
 use bots::random_bot::RandomBot;
-use game::{game::game::Game, map::structs::map_config::MapConfig};
+use game::{bot::bot::BotController, game::game::Game, map::structs::map_config::MapConfig};
 
 #[test]
 fn integration_game_runs_and_has_winner() {
     // Arrange: maak twee bots aan
-    let bot1 = Box::new(RandomBot::new());
-    let bot2 = Box::new(RandomBot::new());
+    let bot1 = BotController::new(Box::new(RandomBot::new()), "Test1".to_string());
+    let bot2 = BotController::new(Box::new(RandomBot::new()), "Test2".to_string());
 
     // Start een spel met een kleine map zodat het snel klaar is
     let settings = MapConfig {
@@ -40,8 +40,8 @@ fn integration_game_runs_and_has_winner() {
 #[test]
 fn test() {
     // Arrange: maak twee bots aan
-    let bot1 = Box::new(RandomBot::new());
-    let bot2 = Box::new(RandomBot::new());
+    let bot1 = BotController::new(Box::new(RandomBot::new()), "Test1".to_string());
+    let bot2 = BotController::new(Box::new(RandomBot::new()), "Test2".to_string());
     let settings = MapConfig {
             bomb_timer: 4,
             bomb_radius: 3,

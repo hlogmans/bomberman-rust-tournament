@@ -14,14 +14,6 @@ pub struct EasyBot {
 }
 
 impl Bot for EasyBot {
-    fn name(&self) -> String {
-        format!("{} ({})", self.name, self.id)
-    }
-
-    fn id(&self) -> usize {
-        self.id
-    }
-
     fn get_move(&mut self, map: &Map, player_location: Coord) -> Command {
         if !self.nextmoves.is_empty() {
             return self.nextmoves.pop().unwrap();
@@ -51,8 +43,9 @@ impl Bot for EasyBot {
         commands[rng.random_range(0..commands.len())]
     }
 
-    fn start_game(&mut self, map_settings: &MapConfig, bot_id: usize) -> bool {
+    fn start_game(&mut self, map_settings: &MapConfig,bot_name: String, bot_id: usize) -> bool {
         self.id = bot_id;
+        self.name = bot_name;
         self.map_settings = map_settings.clone();
         true
     }

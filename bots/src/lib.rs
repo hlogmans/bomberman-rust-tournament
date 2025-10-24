@@ -22,7 +22,7 @@ mod tests {
         // Test that all bots can be instantiated correctly
         for (i, constructor) in bots.iter().enumerate() {
             let bot = constructor();
-            println!("Bot {}: {}", i, bot.name());
+            println!("Bot {}: {}", i, bot.get_name());
         }
 
         // Expect at least 1 bot to be registered
@@ -36,7 +36,7 @@ mod tests {
 
         for constructor in bots.iter() {
             let bot = constructor();
-            let name = bot.name();
+            let name = bot.get_name();
             assert!(
                 names.insert(name.clone()),
                 "Bot name '{}' appears multiple times",
