@@ -110,10 +110,7 @@ impl Map {
     }
 
     pub fn can_move_to(&self, coord: Coord) -> bool {
-        let cell = self.grid.cell_type(coord);
-        cell == CellType::Empty && 
-            !self.get_alive_players().iter().map(|player| player.position).any(|position| position.eq(&coord)) &&
-            !self.bombs.iter().map(|bomb| bomb.position).any(|position| position.eq(&coord))
+        self.grid.cell_type(coord) == CellType::Empty
     }
 
 
