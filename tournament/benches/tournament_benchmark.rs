@@ -16,7 +16,7 @@ fn tournament_benchmark(c: &mut Criterion) {
             let game_bots = prepare_bots(&bots, 2);
 
 
-            tournament::run_game(game_bots, 2);
+            tournament::run_game(game_bots, 11);
         });
     });
 

@@ -13,15 +13,6 @@ pub struct RandomBot {
 impl RandomBot {}
 
 impl Bot for RandomBot {
-    fn name(&self) -> String {
-        // return the name plus the ID
-        format!("{} ({})", self.name, self.id)
-    }
-
-    fn id(&self) -> usize {
-        self.id
-    }
-
     fn get_move(&mut self, _map: &Map, _player_location: Coord) -> Command {
         // Randomly choose a command for the bot
         use rand::Rng;
@@ -37,8 +28,9 @@ impl Bot for RandomBot {
         commands[rng.random_range(0..commands.len())]
     }
 
-    fn start_game(&mut self, _: &MapConfig, bot_id: usize) -> bool {
+    fn start_game(&mut self, _: &MapConfig, bot_name: String, bot_id: usize) -> bool {
         self.id = bot_id;
+        self.name = bot_name;
         true
     }
 }

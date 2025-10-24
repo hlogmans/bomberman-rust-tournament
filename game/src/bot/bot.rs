@@ -25,10 +25,7 @@ use crate::map::structs::map_config::MapConfig;
 /// No manual registration needed anywhere - not even module declarations!
 #[forbid(unsafe_code)]
 pub trait Bot {
-    fn name(&self) -> String;
-    fn id(&self) -> usize;
-
-    fn start_game(&mut self, map_settings: &MapConfig, bot_id: usize) -> bool;
+    fn start_game(&mut self, map_settings: &MapConfig,bot_name: String, bot_id: usize) -> bool;
 
     fn get_move(&mut self, map: &Map, player_location: Coord) -> Command;
 
@@ -37,4 +34,42 @@ pub trait Bot {
     }
 }
 
-pub type BotConstructor = Box<dyn Fn() -> Box<dyn Bot> + Send + Sync>;
+pub type BotConstructor = Box<dyn Fn() -> BotController + Send + Sync>;
+
+pub struct BotController {
+    inner: Box<dyn Bot>,
+    id: usize,
+    name: String
+}
+
+impl BotController {
+    pub fn new(inner: Box<dyn Bot>, name: String) -> Self {
+        Self {
+            inner,
+            id: 0,
+            name: name,
+        }
+    }
+
+    pub fn get_id(&self) -> usize {
+        self.id
+    }
+
+
+    pub fn get_name(&self) -> String {
+        format!("{} ({})", self.name, self.id)
+    }
+
+    pub fn start_game(&mut self, map_settings: &MapConfig, bot_id: usize) -> bool {
+        self.id = bot_id;
+        self.inner.start_game(map_settings, self.name.clone(), self.id)
+    }
+
+    pub fn get_move(&mut self, map: &Map, player_location: Coord) -> Command {
+        self.inner.get_move(map, player_location)
+    }
+
+    pub fn get_debug_info(&self) -> String {
+        self.inner.get_debug_info()
+    }
+}

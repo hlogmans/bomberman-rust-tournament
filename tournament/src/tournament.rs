@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 use game::map::structs::map_config::MapConfig;
 use rand::seq::index::sample;
 use rand::{rng};
-use game::bot::bot::{Bot, BotConstructor};
+use game::bot::bot::{BotConstructor, BotController};
 use game::game::game::Game;
 use game::game::game_result::GameResult;
 use game::game::replay_engine::{GameReplaySnapshot, ReplayEngine};
@@ -44,7 +44,7 @@ pub fn run_tournament_game(tournament_result: &mut TournamentResult, bot_constru
     let game_bots = prepare_bots(bot_constructors, config.num_players);
 
     // Collect names as Strings (we own them)
-    let names: Vec<String> = game_bots.iter().map(|b| b.name().split(" ").next().unwrap().to_string()).collect();
+    let names: Vec<String> = game_bots.iter().map(|b| b.get_name().split(" ").next().unwrap().to_string()).collect();
 
     let game_result = run_game(game_bots, config.size);
     let scores_vec = update_scores(&game_result, &names);
@@ -64,14 +64,14 @@ pub fn run_tournament_game(tournament_result: &mut TournamentResult, bot_constru
     tournament_result.total_games += 1;
 }
 
-pub fn prepare_bots(bot_constructors: &[BotConstructor], player_count: usize) -> Vec<Box<dyn Bot>> {
+pub fn prepare_bots(bot_constructors: &[BotConstructor], player_count: usize) -> Vec<BotController> {
     let mut rng = rng();
     let indices = sample(&mut rng, bot_constructors.len(), player_count);
     indices.iter().map(|i| bot_constructors[i]()).collect()
 }
 
 /// Runs a single game with the given bots
-pub fn run_game(bots: Vec<Box<dyn Bot>>, size: usize) -> GameResult {
+pub fn run_game(bots: Vec<BotController>, size: usize) -> GameResult {
     let settings = MapConfig {
             bomb_timer: 4,
             bomb_radius: 3,
