@@ -18,6 +18,10 @@ impl Bot for RandomBot {
         format!("{} ({})", self.name, self.id)
     }
 
+    fn id(&self) -> usize {
+        self.id
+    }
+
     fn get_move(&mut self, _map: &Map, _player_location: Coord) -> Command {
         // Randomly choose a command for the bot
         use rand::Rng;

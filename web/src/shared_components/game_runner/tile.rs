@@ -24,7 +24,7 @@ pub fn Tile(tile_type: char, player: Option<usize>, bomb: Option<usize>, explosi
            {player.map(|p| {
                 view! {
                     <div class="w-8 h-8 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                        <PlayerIcon index={p} /> 
+                        <PlayerIcon index={p}/> 
                     </div>
                 }
             })}

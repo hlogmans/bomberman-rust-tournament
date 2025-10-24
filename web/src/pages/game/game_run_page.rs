@@ -37,7 +37,7 @@ pub fn GameRunPage() -> impl IntoView {
             })
             .unwrap_or_default()
     };
-
+    
     let game_result = run_game(bots_in_game(), size);
 
     view! {

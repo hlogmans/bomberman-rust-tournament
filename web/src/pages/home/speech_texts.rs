@@ -7,7 +7,7 @@ pub fn speech_texts() -> Vec<&'static str> {
         "You won't win!",
         "Step up your game!",
         "Let's see what you've got!",
-        "This is a challenge for you?",
+        "Is this a challenge for you?",
         "Have you tried improving your bot?",
         "Still debugging, huh?",
         "First time writing Rust?",
@@ -19,6 +19,20 @@ pub fn speech_texts() -> Vec<&'static str> {
         "Don't panic!",
         "Your bot compiles… right?",
         "Your bot won’t last a lifetime!",
-        "Do you have all the traits it takes?"
+        "Do you have all the traits it takes?",
+        "Read. Check. Act. Repeat.",
+        "Big borrow checker is watching!",
+        "Your bot just questioned its existence.",
+        "Your bot is taking the scenic route?",
+        "Panic! Strategy not found.",
+        "Your bot just high-fived itself!",
+        "You're doing great! Your bot is moving… fastish.",
+        "Your bot is winning hearts… not just games.",
+        "Well done! The compiler didn’t cry this time.",
+        "Did you just outsmart yourself?",
+        "Look at you, writing Rust like a champ!",
+        "Your bot is bullying the others!"
     ]
 }
+
+

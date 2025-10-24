@@ -37,8 +37,8 @@ impl GerhardBot {
             (Command::Wait, Some(me)),
         ] {
             let idx =
-                neighbor_field.unwrap().row.get() * map.width + neighbor_field.unwrap().col.get();
-            if map.grid[idx] == ' ' && !self.is_danger(map, neighbor_field.unwrap()) {
+                neighbor_field.unwrap().row.get() * map.map_settings.size + neighbor_field.unwrap().col.get();
+            if map.grid.tiles[idx] == ' ' && !self.is_danger(map, neighbor_field.unwrap()) {
                 opts.push(command);
             }
         }
@@ -55,8 +55,8 @@ impl GerhardBot {
             (Some(me)),
         ] {
             let idx =
-                neighbor_field.unwrap().row.get() * map.width + neighbor_field.unwrap().col.get();
-            if map.grid[idx] == 'p' {
+                neighbor_field.unwrap().row.get() * map.map_settings.size + neighbor_field.unwrap().col.get();
+            if map.grid.tiles[idx] == 'p' {
                 return true;
             }
         }
@@ -82,6 +82,10 @@ impl GerhardBot {
 impl Bot for GerhardBot {
     fn name(&self) -> String {
         format!("{} ({})", self.name, self.id)
+    }
+
+    fn id(&self) -> usize {
+        self.id
     }
 
     fn start_game(&mut self, settings: &MapConfig, bot_id: usize) -> bool {

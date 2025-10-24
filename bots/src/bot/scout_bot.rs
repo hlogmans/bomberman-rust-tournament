@@ -155,6 +155,10 @@ impl Bot for ScoutBot {
         format!("{} ({})", self.name, self.id)
     }
 
+    fn id(&self) -> usize {
+        self.id
+    }
+
     fn start_game(&mut self, settings: &MapConfig, bot_id: usize) -> bool {
         self.id = bot_id;
         self.map_settings = settings.clone();
@@ -163,8 +167,8 @@ impl Bot for ScoutBot {
 
     fn get_move(&mut self, _map: &Map, _player_location: Coord) -> Command {
         if !self.initialized {
-            let height = self.map_settings.height as i32;
-            let width = self.map_settings.width as i32;
+            let height = self.map_settings.size as i32;
+            let width = self.map_settings.size as i32;
 
             self.command_list = ScoutBot::get_correct_init_list(_player_location, height, width);
 
