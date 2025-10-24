@@ -1,4 +1,4 @@
-use crate::{coord::{Coord, ValidCoord},map::map::Map};
+use crate::{coord::{Coord, ValidCoord},map::{cell::CellType, map::Map}};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Direction {
@@ -10,9 +10,14 @@ pub enum Direction {
 
 pub fn try_move_player(map: &mut Map, player_index: usize, direction: Direction) {
     let player = &map.players[player_index];
-    if let Some(new_pos) = get_new_position(direction, player.position).valid(map.map_settings.size, map.map_settings.size) {
+    let current = player.position;
+    if let Some(new_pos) = get_new_position(direction, current).valid(map.map_settings.size, map.map_settings.size) {
         if map.can_move_to(new_pos) {
             map.players[player_index].move_position(new_pos);
+            if map.grid.cell_type(current) != CellType::Bomb{
+                map.grid.set_cell(current, CellType::Empty);
+            }
+            map.grid.set_cell(new_pos, CellType::Player);
         }
     }
 }
