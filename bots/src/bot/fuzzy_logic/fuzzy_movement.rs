@@ -37,12 +37,12 @@ pub fn handle_move_decision(input: FuzzyInput) -> Command {
         if tile_score > highest_tile_score {
             highest_tile_score = tile_score;
 
-            if helper::get_cell_type(helper::get_cell(input.map, neighbour))
+            if helper::get_cell_type(&helper::get_cell(input.map, neighbour))
                 == CellType::Destroyable
             {
                 command = Command::PlaceBomb;
             } else {
-                command = fuzzy_movement::get_command_to_move_to_coord(input.current_position, neighbour)
+                command = helper::get_command_to_move_to_coord(input.current_position, neighbour)
             }
         }
     }
@@ -57,7 +57,7 @@ fn get_tile_score(
     current_position: Coord,
     map_settings: &MapConfig,
 ) -> f64 {
-    let cell_type = helper::get_cell_type(helper::get_cell(map, coord));
+    let cell_type = helper::get_cell_type(&helper::get_cell(map, coord));
 
     if !(cell_type == CellType::Empty || cell_type == CellType::Destroyable) {
         return f64::NEG_INFINITY; // not valid
@@ -89,7 +89,7 @@ fn get_tile_score(
     ]
         .iter()
         .filter_map(|&opt| opt)
-        .filter(|&n| helper::get_cell_type(helper::get_cell(map, n)) == CellType::Empty)
+        .filter(|&n| helper::get_cell_type(&helper::get_cell(map, n)) == CellType::Empty)
         .count();
 
     let escape_score = (escape_routes as f64) / 4.0;
@@ -99,20 +99,3 @@ fn get_tile_score(
     final_score
 }
 
-pub fn get_command_to_move_to_coord(current_position: Coord, target_position: Coord) -> Command {
-    let mut command = Command::Wait;
-    if current_position.move_down().unwrap() == target_position {
-        command = Command::Down;
-    }
-    if current_position.move_up().unwrap() == target_position {
-        command = Command::Up;
-    }
-    if current_position.move_left().unwrap() == target_position {
-        command = Command::Left;
-    }
-    if current_position.move_right().unwrap() == target_position {
-        command = Command::Right
-    }
-
-    return command;
-}

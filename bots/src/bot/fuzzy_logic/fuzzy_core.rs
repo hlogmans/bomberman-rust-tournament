@@ -4,7 +4,6 @@ use game::map::cell::CellType;
 use game::map::enums::command::Command;
 use game::map::map::Map;
 use crate::bot::fuzzy_logic::fuzzy_input::FuzzyInput;
-use crate::bot::fuzzy_logic::fuzzy_movement::get_command_to_move_to_coord;
 use crate::bot::fuzzy_logic::helper;
 use crate::bot::fuzzy_logic::manhattan::manhattan;
 
@@ -60,7 +59,7 @@ impl FuzzyLogic {
     pub fn get_bomb_score(input: FuzzyInput) -> f64{
         Self::closeness(
             manhattan(input.current_position, Self::get_closest_player_coords(input.map, input.bot_name, input.bot_id, input.current_position)),
-            input.map_settings.width - 1 + input.map_settings.height - 1,
+            input.map_settings.size - 1 + input.map_settings.size - 1,
         )
     }
 
@@ -76,7 +75,7 @@ impl FuzzyLogic {
                 Self::danger_level_at(neighbour, input.map, input.map_settings.bomb_radius);
             if score < lowest_danger_score {
                 lowest_danger_score = score;
-                command = get_command_to_move_to_coord(input.current_position, neighbour);
+                command = helper::get_command_to_move_to_coord(input.current_position, neighbour);
             }
         }
 
@@ -92,7 +91,7 @@ impl FuzzyLogic {
     fn is_coord_blocked_by_wall(map: &Map, coord: Coord, position: Coord, move_row: bool) -> bool {
         let mut current_position = coord;
         while !Self::is_coord_same(position, current_position) {
-            let current_cell_type = helper::get_cell_type(helper::get_cell(map, current_position));
+            let current_cell_type = helper::get_cell_type(&helper::get_cell(map, current_position));
 
             if current_cell_type == CellType::Destroyable || current_cell_type == CellType::Wall {
                 return true;
@@ -178,7 +177,7 @@ impl FuzzyLogic {
         Self::get_neighbour_coords(position)
             .iter()
             .filter_map( | coord| {
-                if helper::get_cell_type(helper::get_cell(map, *coord)) == CellType::Empty {
+                if helper::get_cell_type(&helper::get_cell(map, *coord)) == CellType::Empty {
                     Some(*coord)
                 } else {
                     None
