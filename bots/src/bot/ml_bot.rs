@@ -5,7 +5,7 @@ use game::coord::Coord;
 use game::map::enums::command::Command;
 use game::map::map::Map;
 use game::map::structs::map_config::MapConfig;
-use game::shrink::calculate_shrink_location;
+use game::map::grid::shrink::calculate_shrink_location;
 
 #[derive(Clone)]
 struct Node {
@@ -48,11 +48,11 @@ impl MlBot {
 
     fn create_enemy_heatmap(&self, map: &Map) -> Vec<f32> {
         //let mut heatmap = self.empty_heatmap();
-        let mut heatmap = vec![0.01; self.map_settings.width * self.map_settings.height];
+        let mut heatmap = vec![0.01; self.map_settings.size * self.map_settings.size];
 
 
 
-        map.players
+        map.get_alive_players()
             .iter()
             .filter(|p| !p.name.contains(&self.name))
             .for_each(|p| {
@@ -64,8 +64,8 @@ impl MlBot {
     fn create_breakable_heatmap(&self, map: &Map) -> Vec<f32> {
         let mut heatmap = self.empty_heatmap();
 
-        for row in 0..map.height {
-            for col in 0..map.width {
+        for row in 0..map.map_settings.size {
+            for col in 0..map.map_settings.size {
                 let idx = self.idx(row, col);
                 let cell = self.get_map_cell(row, col, map);
                 if cell == '.' {
@@ -110,8 +110,8 @@ impl MlBot {
     fn propagate_heatmap(&self, map: &Map, heatmap: &Vec<f32>) -> Vec<f32> {
         let mut propagated_heatmap = heatmap.clone();
 
-        for row in 0..map.height {
-            for col in 0..map.width {
+        for row in 0..map.map_settings.size {
+            for col in 0..map.map_settings.size {
                 let index = self.idx(row, col);
                 let original_value = heatmap[index];
                 if original_value > 0.0 {
@@ -324,7 +324,7 @@ impl MlBot {
 
     #[inline(always)]
     fn empty_heatmap(&self) -> Vec<f32> {
-        vec![0.0; self.map_settings.width * self.map_settings.height]
+        vec![0.0; self.map_settings.size * self.map_settings.size]
     }
 
     #[inline(always)]
@@ -343,7 +343,7 @@ impl MlBot {
 
     #[inline(always)]
     fn get_map_cell(&self, row: usize, col: usize, map: &Map) -> char {
-        self.get_grid_value(&map.grid, row, col)
+        self.get_grid_value(&map.grid.tiles, row, col)
     }
     #[inline(always)]
     fn get_grid_value<T: Copy>(&self, grid: &Vec<T>, row: usize, col: usize) -> T {
@@ -354,11 +354,11 @@ impl MlBot {
 
     #[inline(always)]
     fn idx(&self, row: usize, col: usize) -> usize {
-        row * self.map_settings.width + col
+        row * self.map_settings.size + col
     }
     #[inline(always)]
     fn out_of_bounds(&self, row: usize, col: usize) -> bool {
-        row >= self.map_settings.height || col >= self.map_settings.width
+        row >= self.map_settings.size || col >= self.map_settings.size
     }
 }
 
@@ -368,8 +368,8 @@ impl Bot for MlBot {
         format!("{} ({})", self.name, self.id)
     }
 
-    fn get_debug_info(&self) -> String {
-       "test".to_string()
+    fn id(&self) -> usize {
+        self.id
     }
 
     fn start_game(&mut self, settings: &MapConfig, bot_id: usize) -> bool {
@@ -383,8 +383,7 @@ impl Bot for MlBot {
             self.next_shrink_location = None;
             if let Some(shrink_location) = calculate_shrink_location(
                 self.turn - map.map_settings.endgame,
-                map.map_settings.width,
-                map.map_settings.height,
+                map.map_settings.size,
             ) {
                 self.next_shrink_location = Some(shrink_location);
             }

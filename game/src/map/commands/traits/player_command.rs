@@ -1,5 +1,5 @@
 use crate::map::map::Map;
 
 pub trait PlayerCommand {
-    fn execute(&self, map: &mut Map, player_index: usize);
+    fn try_execute(&self, map: &mut Map, player_index: usize);
 }

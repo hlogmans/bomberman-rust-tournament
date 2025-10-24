@@ -4,16 +4,12 @@ use crate::map::map::Map;
 pub(super) struct BombProcessor;
 
 impl BombProcessor {
-    pub(super) fn process(map: &mut Map, alive_players: &mut Vec<usize>) -> bool {
+    pub(super) fn process(map: &mut Map){
         map.bomb_timer_decrease();
-
         let exploding_bombs = map.get_exploding_bombs();
-
         if exploding_bombs.is_empty() {
             map.explosions = Vec::new();
-            return false;
         }
-
         for bomb in &exploding_bombs {
             map.remove_bomb(*bomb);
         }
@@ -27,18 +23,9 @@ impl BombProcessor {
         map.explosions = affected_tiles.clone();
 
         for tile in affected_tiles {
-            map.clear_destructable(tile);
-
-            if let Some(player_index) = map.get_player_index_at_location(tile) {
-                alive_players.retain(|&p| p != player_index);
-                if alive_players.len() <= 1 {
-                    return true;
-                }
-            }
+            map.grid.clear_destructable(tile);
+            map.kill_at_location(tile);
         }
-
-
-        false
     }
 
     pub(super) fn bomb_explosion_locations(location: Coord, map: &mut Map) -> Vec<Coord> {
@@ -58,7 +45,7 @@ impl BombProcessor {
                 current_loc = current_loc.and_then(direction);
 
                 if let Some(loc) = current_loc {
-                    let cell_type = map.cell_type(loc);
+                    let cell_type = map.grid.cell_type(loc);
 
                     match cell_type {
                         // A wall stops the explosion completely in this direction.
@@ -88,8 +75,7 @@ impl BombProcessor {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-    use crate::map::factories::command_factory;
+    use crate::map::player::Player;
     use crate::map::structs::map_config::MapConfig;
     use super::*;
 
@@ -97,18 +83,19 @@ mod tests {
     #[test]
     fn test_bomb_explosion_center_clear_path() {
         let map_settings = MapConfig {
-            width: 7,
-            height: 7,
+            size: 7,
             ..Default::default()
         };
 
-        let  map = &mut Map::new(map_settings, Arc::new(command_factory::DefaultCommandFactory)).build();
+        let players = vec![Player::new("Player 1".to_string(), Coord::from(1, 1), 0), Player::new("Player 2".to_string(), Coord::from(1, 6), 1)];
 
-        map.clear_destructable(Coord::from(3, 3));
-        map.clear_destructable(Coord::from(2, 3)); // up
-        map.clear_destructable(Coord::from(4, 3)); // down
-        map.clear_destructable(Coord::from(3, 2)); // left
-        map.clear_destructable(Coord::from(3, 4)); // right
+        let  map = &mut Map::new(map_settings, players);
+
+        map.grid.clear_destructable(Coord::from(3, 3));
+        map.grid.clear_destructable(Coord::from(2, 3)); // up
+        map.grid.clear_destructable(Coord::from(4, 3)); // down
+        map.grid.clear_destructable(Coord::from(3, 2)); // left
+        map.grid.clear_destructable(Coord::from(3, 4)); // right
 
         let result = BombProcessor::bomb_explosion_locations(Coord::from(3, 3), map);
 
@@ -134,12 +121,13 @@ mod tests {
     #[test]
     fn test_bomb_explosion_corner() {
         let map_settings = MapConfig {
-            width: 5,
-            height: 5,
+            size: 7,
             ..Default::default()
         };
 
-        let  map = &mut Map::new(map_settings, Arc::new(command_factory::DefaultCommandFactory)).build();
+        let players = vec![Player::new("Player 1".to_string(), Coord::from(1, 1), 0), Player::new("Player 2".to_string(), Coord::from(1, 6), 1)];
+
+        let  map = &mut Map::new(map_settings, players);
 
         let result = BombProcessor::bomb_explosion_locations(Coord::from(1, 1), map);
 
@@ -156,21 +144,22 @@ mod tests {
     #[test]
     fn test_bomb_explosion_corner_with_destructable() {
         let map_settings = MapConfig {
-            width: 5,
-            height: 5,
+            size: 7,
             ..Default::default()
         };
 
-        let  map = &mut Map::new(map_settings, Arc::new(command_factory::DefaultCommandFactory)).build();
+        let players = vec![Player::new("Player 1".to_string(), Coord::from(1, 1), 0), Player::new("Player 2".to_string(), Coord::from(1, 6), 1)];
+
+        let  map = &mut Map::new(map_settings, players);
 
         let result = BombProcessor::bomb_explosion_locations(Coord::from(3, 3), map);
 
         let expected = vec![
             Coord::from(3, 3),
             Coord::from(3, 2),
-            //Coord::from(3, 1), Can't be destroyed there is a destrutable in the way at 3,2
+            Coord::from(3, 4),
             Coord::from(2, 3),
-            Coord::from(1, 3),
+            Coord::from(4, 3),
         ];
         assert_eq!(result, expected);
     }
@@ -178,12 +167,13 @@ mod tests {
     #[test]
     fn test_bomb_explosion_range_1() {
         let map_settings = MapConfig {
-            width: 5,
-            height: 5,
+            size: 7,
             ..Default::default()
         };
 
-        let map = &mut Map::new(map_settings, Arc::new(command_factory::DefaultCommandFactory)).build();
+        let players = vec![Player::new("Player 1".to_string(), Coord::from(1, 1), 0), Player::new("Player 2".to_string(), Coord::from(1, 6), 1)];
+
+        let map = &mut Map::new(map_settings, players);
 
         let result = BombProcessor::bomb_explosion_locations(Coord::from(2, 2), map);
 

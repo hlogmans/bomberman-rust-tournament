@@ -1,8 +1,9 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
+use game::map::structs::map_config::MapConfig;
 use rand::seq::index::sample;
-use rand::{thread_rng};
+use rand::{rng};
 use game::bot::bot::{Bot, BotConstructor};
 use game::game::game::Game;
 use game::game::game_result::GameResult;
@@ -43,7 +44,7 @@ pub fn run_tournament_game(tournament_result: &mut TournamentResult, bot_constru
     let game_bots = prepare_bots(bot_constructors, config.num_players);
 
     // Collect names as Strings (we own them)
-    let names: Vec<String> = game_bots.iter().map(|b| b.name()).collect();
+    let names: Vec<String> = game_bots.iter().map(|b| b.name().split(" ").next().unwrap().to_string()).collect();
 
     let game_result = run_game(game_bots, config.size);
     let scores_vec = update_scores(&game_result, &names);
@@ -64,19 +65,25 @@ pub fn run_tournament_game(tournament_result: &mut TournamentResult, bot_constru
 }
 
 pub fn prepare_bots(bot_constructors: &[BotConstructor], player_count: usize) -> Vec<Box<dyn Bot>> {
-    let mut rng = thread_rng();
+    let mut rng = rng();
     let indices = sample(&mut rng, bot_constructors.len(), player_count);
     indices.iter().map(|i| bot_constructors[i]()).collect()
 }
 
 /// Runs a single game with the given bots
 pub fn run_game(bots: Vec<Box<dyn Bot>>, size: usize) -> GameResult {
-    Game::build(Some(size), Some(size), bots, None).run()
+    let settings = MapConfig {
+            bomb_timer: 4,
+            bomb_radius: 3,
+            endgame: 500,
+            size: size
+        };
+    Game::build( bots, settings, None).run()
 }
 
 /// Generates a replay snapshot from a game result
 pub fn replay(game_result: &GameResult) -> GameReplaySnapshot {
-    let mut game = Game::build(None, None, Vec::new(), Some(game_result.game_settings.clone()));
+    let mut game = Game::build( Vec::new(), game_result.game_settings.clone(), Some(game_result.bots.clone()));
     let mut replay_engine = ReplayEngine::new(&mut game);
     replay_engine.to_snapshot(&game_result.replay_data)
 }
@@ -84,7 +91,7 @@ pub fn replay(game_result: &GameResult) -> GameReplaySnapshot {
 /// Updates scores based on the game result
 pub fn update_scores(game_result: &GameResult, bot_names: &[String]) -> Vec<Score> {
     // Borrow the winner directly if it's a String
-    let winner_name: &String = &game_result.winner;
+    let winner_name: String = game_result.winner.split(" ").next().unwrap().to_string();
 
     bot_names
         .iter()

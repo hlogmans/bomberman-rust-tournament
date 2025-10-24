@@ -1,253 +1,117 @@
-use std::sync::Arc;
-use rand::seq::SliceRandom;
+use crate::bot::bot_data::BotData;
+use crate::coord::Coord;
 use crate::game::bomb_processor::BombProcessor;
-
-use crate::{
-    game::{game_progress::GameProgress, game_result::GameResult},
-    map::map::{ConsoleDisplay, Map, MapDisplay},
-    map::enums::command::Command,
-    shrink::calculate_shrink_location,
-};
 use crate::bot::bot::Bot;
+use crate::map::player::Player;
 use crate::map::structs::map_config::MapConfig;
-
+use crate::{game::game_result::GameResult, map::enums::command::Command, map::map::Map};
 
 pub struct Game {
     pub map: Map,
     bots: Vec<Box<dyn Bot>>,
-    display: Box<dyn MapDisplay>,
-
-    #[allow(dead_code)]
-    pub player_count: usize,
-    // map turn. Every player sets a cmmmand for the current turn.
     pub turn: usize,
-
-    // history of handles player actions, it is deterministic, so it can be replayed.
     pub player_actions: Vec<Vec<Command>>,
     pub debug_info: Vec<Vec<String>>,
-
-    // if the winner is determined, it will be set to Some(index of the winner)
-    pub winner: Option<usize>,
-
-    // this is the list of active players that can do a move. The game is won if only one is alive.
-    // at start the list is randomized.
-    alive_players: Vec<usize>,
 }
 
 impl Game {
-    /// Constructs a new game instance with the given width, height, and players.
-    ///
-    /// # Arguments
-    ///
-    /// * `width` - The width of the game map.
-    /// * `height` - The height of the game map.
-    /// * `players` - The list of players participating in the game.
-    ///
-    /// # Returns
-    ///
-    /// A game result object that contains the winner and the history of player actions.
     pub fn build(
-        width: Option<usize>,
-        height: Option<usize>,
-        bots: Vec<Box<dyn Bot>>,
-        map_settings: Option<MapConfig>,
+        mut bots: Vec<Box<dyn Bot>>,
+        map_settings: MapConfig,
+        bot_data: Option<Vec<BotData>>,
     ) -> Self {
-        let map = if let Some(settings) = map_settings {
-            Map::new(settings, Arc::new(crate::map::factories::command_factory::DefaultCommandFactory)).build()
-        } else {
-            let map_settings = MapConfig {
-                bomb_timer: 4,
-                bomb_radius: 3,
-                endgame: 500,
-                width: width.expect("width required for new game"),
-                height: height.expect("height required for new game"),
-                player_names: bots.iter().map(|b| b.name().to_string()).collect(),
-            };
-            Map::new(map_settings, Arc::new(crate::map::factories::command_factory::DefaultCommandFactory)).build()
-        };
-
+        for (i, bot) in bots.iter_mut().enumerate() {
+            bot.start_game(&map_settings, i);
+        }
+        let map_size = map_settings.size.clone();
+        let map = Map::new(
+            map_settings,
+            Self::generate_players_from_bots(&bots, bot_data, map_size),
+        );
         Game::from_map(map, bots)
     }
 
-    pub fn from_map(map: Map, bots: Vec<Box<dyn Bot>>) -> Self {
-        let player_count = map.map_settings.player_names.len();
+    pub fn generate_players_from_bots(
+        bots: &Vec<Box<dyn Bot>>,
+        bot_data: Option<Vec<BotData>>,
+        size: usize,
+    ) -> Vec<Player> {
+        let positions = [
+            Coord::from(1, 1),
+            Coord::from(1, size - 2),
+            Coord::from(size - 2, 1),
+            Coord::from(size - 2, size - 2),
+        ];
 
-        let mut game = Game {
+        match bot_data {
+            Some(bot_data) => bot_data
+                .into_iter()
+                .zip(positions)
+                .map(|(bot, position)| Player::new(bot.name.clone(), position, bot.id))
+                .collect(),
+            None => bots
+                .iter()
+                .zip(positions)
+                .map(|(bot, position)| Player::new(bot.name(), position, bot.id()))
+                .collect(),
+        }
+    }
+
+    pub fn from_map(map: Map, bots: Vec<Box<dyn Bot>>) -> Self {
+        let player_count = bots.len();
+        Game {
             map,
             bots,
-            player_count,
             turn: 0,
             player_actions: vec![Vec::new(); player_count],
             debug_info: vec![Vec::new(); player_count],
-            winner: None,
-            alive_players: (0..player_count).collect(),
-            display: Box::new(ConsoleDisplay),
-        };
-
-        // Only initialize bots if they exist
-        if !game.bots.is_empty() {
-            game.init();
-        }
-
-        game
-    }
-
-    fn init(&mut self) {
-        let mut rng = rand::rng();
-        self.alive_players = (0..self.bots.len()).collect();
-        self.alive_players.shuffle(&mut rng);
-
-        // call start_game for each bot
-        for (i, bot) in self.bots.iter_mut().enumerate() {
-            bot.start_game(&self.map.map_settings, i);
         }
     }
 
     pub fn run(&mut self) -> GameResult {
-        while self.winner.is_none() {
-            self.run_round(None, None, None);
+        self.run_game(None)
+    }
+
+    pub fn run_game(&mut self, commands: Option<&Vec<Vec<Command>>>) -> GameResult {
+        while !self.map.has_winner() {
+            self.run_round(commands);
         }
-
-        GameResult::build(self)
-    } // loop until a winner is set
-
-    pub fn replay(&mut self, commands: &Vec<Vec<Command>>) -> GameResult {
-        while self.winner.is_none() {
-            self.run_round(None, Some(commands), None);
-        }
-
         GameResult::build(self)
     }
 
-    pub fn winner_name(&self) -> Option<String> {
-        self.winner.and_then(|x| self.map.get_player_name(x))
-    }
-
-    /// run a single turn for the game. Has a callback for player actions.
-    /// returns true if the game has a winner, false otherwise.
-    /// There is a callback to check game status like turn number.
-    pub fn run_round(
-        &mut self,
-        progress_callback: Option<&mut dyn FnMut(&GameProgress)>,
-        replay_commands: Option<&Vec<Vec<Command>>>,
-        logging_callback: Option<&mut dyn FnMut(String)>,
-    ) -> bool {
-        // This method will run a round of the game.
-        // It will handle player actions, update the map, and check for a winner.
-        if self.check_winner() {
-            return true;
+    pub fn winner_name(&self) -> String {
+        match &self.map.winner {
+            Some(player) => player.name.clone(),
+            None => "No winner yet".to_string(),
         }
-
-        // Process player actions for the current turn
-        for player_index in 0..self.alive_players.len() {
+    }
+    pub fn run_round(&mut self, replay_commands: Option<&Vec<Vec<Command>>>) {
+        for player_id in self.map.get_alive_players_ids() {
             let command = if let Some(replay) = replay_commands {
-                // 🟢 REPLAY MODE: use pre-recorded commands only
-                replay[player_index][self.turn]
+                replay[player_id][self.turn]
             } else {
-                // 🎮 NORMAL MODE: ask bots for their next move
-                let bot = self
-                    .bots
-                    .get_mut(player_index)
-                    .expect("Bot not found for player index");
-                let loc = self.map.get_player(player_index).unwrap().position;
-
-                let new_command = bot.get_move(&self.map, loc);
-                self.player_actions[player_index].push(new_command);
-                self.debug_info[player_index].push(bot.get_debug_info());
-                new_command
+                self.get_command(player_id)
             };
-
-            self.map.perform_move(player_index, command);
-
-            if self.check_winner() {
-                return true;
-            }
+            self.map.try_execute_command(player_id, command);
         }
-
-
-        // process bombs and update the map
-        if self.process_bombs(&logging_callback) {
-            return true;
-        }
-
-        // reduce map size if needed
+        BombProcessor::process(&mut self.map);
         if self.map.map_settings.endgame <= self.turn {
-            if let Some(shrink_location) = calculate_shrink_location(
-                self.turn - self.map.map_settings.endgame,
-                self.map.map_settings.width,
-                self.map.map_settings.height,
-            ) {
-                // set map location to wall
-                self.map.set_wall(shrink_location);
-
-                // check if there is a player at the shrink location
-                if let Some(player_index) = self.map.get_player_index_at_location(shrink_location) {
-                    // Remove the player from the game
-                    let playername = self.map.get_player_name(player_index);
-                    if let Some(player_name) = playername
-                        && let Some(cb) = logging_callback
-                    {
-                        cb(format!(
-                            "Player {player_name} has been removed from the game due to shrinking at location {shrink_location:?}"
-                        ));
-                    }
-
-                    self.alive_players.retain(|&x| x != player_index);
-                }
-                if self.check_winner() {
-                    return true;
-                }
-            } else {
-                // If no valid shrink location is found, we can handle it as needed.
-                // For now, we will just log an error or panic.
-                panic!("No valid shrink location found for turn {}", self.turn);
-            }
-
-            // set map location to wall
+            self.map.handle_shrink(self.turn);
         }
-
-        if self.check_winner() {
-            return true;
-        }
-
-        // Increment turn
         self.turn += 1;
-
-        if let Some(callback) = progress_callback {
-            let progress = GameProgress {
-                turn: self.turn,
-                endgame_started: self.turn >= self.map.map_settings.endgame,
-            };
-            callback(&progress);
-        }
-
-        false
     }
 
-    /// Check if there is a winner after each round
-    /// Returns true if there is a winner, false otherwise.
-    fn check_winner(&mut self) -> bool {
-        // Check if there is only one player left alive
-        let alive_count = self.alive_players.len();
-        if alive_count == 1 {
-            // Set the winner to the index of the last remaining player
-            self.winner = self.alive_players.first().copied(); // Assuming the first player in alive_players is the winner
-            return true;
-        } else if alive_count == 0 {
-            // If no players are left, set winner to None or handle as needed
-            self.winner = None;
-            return true;
-        }
-        false
-    }
 
-    /// process the bombs. If there is a winner, return true. Then not all bombs might have been processed.
-    /// It stops immediately if a winner is found.
-    fn process_bombs(&mut self, _logging_callback: &Option<&mut dyn FnMut(String)>) -> bool {
-        BombProcessor::process(&mut self.map, &mut self.alive_players)
-    }
+    fn get_command(&mut self, player_id: usize) -> Command{
+        let bot = self
+            .bots
+            .get_mut(player_id)
+            .expect("Bot not found for player index");
+        let loc = self.map.get_player(player_id).unwrap().position;
 
-    pub fn display(&self) {
-        self.display.display(&self.map);
+        let new_command = bot.get_move(&self.map, loc);
+        self.player_actions[player_id].push(new_command);
+        self.debug_info[player_id].push(bot.get_debug_info());
+        new_command
     }
 }

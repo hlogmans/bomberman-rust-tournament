@@ -66,4 +66,4 @@ lib-features = ["hydrate"]
 lib-default-features = false
 lib-profile-release = "wasm-release"
 
-watch-additional-files = ["src", "../bots/src"]
+watch-additional-files = ["src", "../bots/src", "../game/src", "../tournament/src"]

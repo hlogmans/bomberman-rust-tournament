@@ -87,8 +87,8 @@ pub fn generate_loading_animation() -> Vec<MapReplaySnapshot> {
         snapshots.push(MapReplaySnapshot {
             turn,
             players: vec![
-                Player { name: "Alice".to_string(), position: player_1_pos },
-                Player { name: "Bob".to_string(), position: player_2_pos },
+                Player::new("Alice".to_string(), player_1_pos, 0),
+                Player::new("Bob".to_string(), player_2_pos, 1),
             ],
             bombs: vec![],
             grid: grid.clone(),
@@ -96,8 +96,6 @@ pub fn generate_loading_animation() -> Vec<MapReplaySnapshot> {
         });
         explosions.push(player_1_pos);
         explosions.push(player_2_pos);
-        // grid[player_1_pos.row.get() * size + player_1_pos.col.get()] = '.';
-        // grid[player_2_pos.row.get() * size + player_2_pos.col.get()] = '.';
     }
 
     snapshots

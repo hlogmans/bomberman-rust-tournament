@@ -1,49 +1,134 @@
-use crate::coord::Coord;
-use crate::map::map::Map;
-use crate::map::cell::CellType;
+use crate::{coord::{Coord, ValidCoord},map::map::Map};
 
-pub fn move_player(map: &mut Map, player_index: usize, new_pos: Coord) {
-    if let Some(current) = map.get_player_position(player_index) && map.cell_type(new_pos) == CellType::Empty {
-        //this quite a unique way of how the code works needs to be reworked some day
-        //the reason this works is when the player lays a bomb he will not be on the map anymore so no need to set this tile to empty
-        //next to that we don't wanne remove the bomb
-        //this is buggy because if a player lays a bomb the player is not on the map anymore so i hope that bots use player data instead of map data
-        //because if not the player can hide in a cheaty way :p
-        if map.cell_type(current) != CellType::Bomb {
-            map.set_cell(current, CellType::Empty);
+#[derive(Debug, Clone, Copy)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+pub fn try_move_player(map: &mut Map, player_index: usize, direction: Direction) {
+    let player = &map.players[player_index];
+    if let Some(new_pos) = get_new_position(direction, player.position).valid(map.map_settings.size, map.map_settings.size) {
+        if map.can_move_to(new_pos) {
+            map.players[player_index].move_position(new_pos);
         }
+    }
+}
 
-        map.set_cell(new_pos, CellType::Player);
-        map.set_player_position(player_index, new_pos);
+fn get_new_position(direction: Direction, coord: Coord) -> Option<Coord>{ 
+    match direction {
+        Direction::Up => coord.move_up(),
+        Direction::Down => coord.move_down(),
+        Direction::Left => coord.move_left(),
+        Direction::Right => coord.move_right()
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    use std::sync::Arc;
     use crate::coord::Coord;
-    use crate::map::cell::CellType;
+    use crate::map::commands::move_action::{try_move_player, Direction};
     use crate::map::map::Map;
-    use crate::map::commands::traits::player_command::PlayerCommand;
-    use crate::map::factories::command_factory::DefaultCommandFactory;
     use crate::map::player::Player;
     use crate::map::structs::map_config::MapConfig;
 
-    pub fn test_move_command<C: PlayerCommand>(command: C, start: Coord, expected: Coord) {
+
+    #[test]
+    fn test_move_up() {
+        // Arrange
+        let expected = Coord::from(5, 4);
+
+        // Act & Assert
+        test_move_command(Direction::Up, expected)
+    }
+
+    #[test]
+    fn test_move_up_blocked_by_wall() {
+        // Arrange
+        let start = Coord::from(5, 5);
+
+        // Act & Assert
+        test_move_command_cannot_move(Direction::Up, start)
+    }
+
+    #[test]
+    fn test_move_down() {
+        // Arrange
+        let expected = Coord::from(5, 6);
+
+        // Act & Assert
+        test_move_command(Direction::Down, expected )
+    }
+    #[test]
+    fn test_move_down_blocked() {
+        // Arrange
+        let start = Coord::from(5, 5);
+        // Act & Assert
+        test_move_command_cannot_move(Direction::Down, start)
+    }
+
+    #[test]
+    fn test_move_left() {
+        // Arrange
+        let expected = Coord::from(4, 5);
+        // Act & Assert
+        test_move_command(Direction::Left, expected )
+    }
+
+    #[test]
+    fn test_move_left_blocked() {
+        // Arrange
+        let start = Coord::from(5, 5);
+        // Act & Assert
+        test_move_command_cannot_move(Direction::Left, start)
+    }
+
+    #[test]
+    fn test_move_right() {
+        // Arrange
+        let expected = Coord::from(6, 5);
+        // Act & Assert
+        test_move_command(Direction::Right, expected )
+    }
+    #[test]
+    fn test_move_right_blocked() {
+        // Arrange
+        let start = Coord::from(5, 5);
+        // Act & Assert
+        test_move_command_cannot_move(Direction::Right, start)
+    }
+
+    pub fn test_move_command(direction: Direction, expected: Coord) {
         //Arrange
-        let mut map = Map::new(MapConfig { width: 7, height: 11, ..MapConfig::default() }, Arc::new(DefaultCommandFactory)).build();
-
-
-        map.players = vec![Player { name: "player1".to_string(), position: start }];
-        map.set_cell(start, CellType::Player);
-        map.set_cell(expected, CellType::Empty);
+        let start = Coord::from(5, 5);
+        let mut map = Map::new(MapConfig { size: 11, ..MapConfig::default() },  vec![Player::new("player1".to_string(), start, 0)]);
 
         // Act
-        command.execute(&mut map, 0);
+        try_move_player(&mut map, 0, direction);
 
         // Assert
-        let new_pos = map.get_player_position(0).unwrap();
+        let new_pos = map.players[0].position;
         assert_eq!(new_pos.row, expected.row);
         assert_eq!(new_pos.col, expected.col);
+    }
+
+
+    pub fn test_move_command_cannot_move(direction: Direction, start: Coord) {
+        //Arrange
+        let mut map = Map::new(MapConfig { size: 11, ..MapConfig::default() },  vec![Player::new("player1".to_string(), start, 0)]);
+        map.grid.set_wall(start.move_up().expect("Controlled test"));
+        map.grid.set_wall(start.move_down().expect("Controlled test"));
+        map.grid.set_wall(start.move_left().expect("Controlled test"));
+        map.grid.set_wall(start.move_right().expect("Controlled test"));
+
+        // Act
+        try_move_player(&mut map, 0, direction);
+
+        // Assert
+        let new_pos = map.players[0].position;
+        assert_eq!(new_pos.row, start.row);
+        assert_eq!(new_pos.col, start.col);
     }
 }

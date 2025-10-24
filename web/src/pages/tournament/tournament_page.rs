@@ -20,30 +20,34 @@ pub fn TournamentPage() -> impl IntoView {
                 });
 
                 view! {
-                    <div>
-                        <h2 class="text-xl font-bold mb-2">
-                            {format!("Final Scores after {} games:", result_tournament.total_games)}
-                        </h2>
-                        <ul class="list-disc pl-6">
-                            {
-                                sorted_scores.iter().map(|(player, score)| {
-                                    let win_pct = (score.wins as f64 / score.total_games.max(1) as f64) * 100.0;
-                                    view! {
-                                        <li>
-                                            {format!(
-                                                "{}: Win%: {:.1} (W:{} / L:{} / G:{})",
-                                                player, win_pct, score.wins, score.losses, score.total_games
-                                            )}
-                                        </li>
-                                    }
-                                }).collect::<Vec<_>>()
-                            }
-                        </ul>
+                    <div class="flex gap-8 items-start">
+                        <div class="flex-1">
+                            <h2 class="text-xl font-bold mb-2">
+                                {format!("Final Scores after {} games:", result_tournament.total_games)}
+                            </h2>
+                            <ul class="list-disc pl-6">
+                                {
+                                    sorted_scores.iter().map(|(player, score)| {
+                                        let win_pct = (score.wins as f64 / score.total_games.max(1) as f64) * 100.0;
+                                        view! {
+                                            <li>
+                                                {format!(
+                                                    "{}: Win%: {:.1} (W:{} / L:{} / G:{})",
+                                                    player, win_pct, score.wins, score.losses, score.total_games
+                                                )}
+                                            </li>
+                                        }
+                                    }).collect::<Vec<_>>()
+                                }
+                            </ul>
+                        </div>
+                        <div class="flex-none">
+                            <h2 class="text-xl font-bold mb-2">
+                                "Most interesting game:"
+                            </h2>
+                            <RunGameResult game_result=result_tournament.most_interesting.expect("Most interesting game")/>
+                        </div>
                     </div>
-                    <h2 class="text-xl font-bold mb-2 pt-16">
-                        "Most interesting game:"
-                    </h2>
-                    <RunGameResult game_result=result_tournament.most_interesting.expect("Most interesting game")/>
                 }
             })}
         </Suspense>
