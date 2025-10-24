@@ -5,14 +5,11 @@ use crate::map::commands::{
 use crate::map::commands::traits::player_command::PlayerCommand;
 use crate::map::enums::command::Command;
 
-pub trait CommandFactory: Send + Sync {
-    fn create(&self, command: &Command) -> Option<Box<dyn PlayerCommand>>;
-}
 
-pub struct DefaultCommandFactory;
+pub struct CommandFactory;
 
-impl CommandFactory for DefaultCommandFactory {
-    fn create(&self, command: &Command) -> Option<Box<dyn PlayerCommand>> {
+impl CommandFactory {
+    pub fn create(command: &Command) -> Option<Box<dyn PlayerCommand>> {
         match command {
             Command::Up => Some(Box::new(MoveUp)),
             Command::Down => Some(Box::new(MoveDown)),

@@ -1,6 +1,7 @@
+
+use crate::{coord::Coord, map::grid::grid::Grid};
+
 pub struct GridFactory {
-    width: usize,
-    height: usize,
 }
 
 /*
@@ -20,29 +21,41 @@ WWWWWWW line 6
 
  */
 impl GridFactory {
-    pub fn new(width: usize, height: usize) -> Self {
-        GridFactory { width, height }
+    pub fn new(size: usize, player_locations: Vec<Coord>) -> Grid {
+        let tiles = Self::generate_grid(size);
+        let mut grid = Grid::new(tiles, size);
+        Self::remove_destructables_around_users(&mut grid, player_locations);
+        grid
     }
 
-    pub fn prepare_grid(&self) -> Vec<char> {
-        let mut grid = vec!['.'; self.width * self.height];
+    fn generate_grid(size: usize) -> Vec<char> {
+        let mut grid = vec!['.'; size * size];
 
-        for row in 0..self.height {
-            for column in 0..self.width {
-                let walled = (row == 0 || row == self.height - 1 || column == 0 || column == self.width - 1) || (column.is_multiple_of(2) && row.is_multiple_of(2));
+        for row in 0..size {
+            for column in 0..size {
+                let walled = (row == 0 || row == size - 1 || column == 0 || column == size - 1) || (column.is_multiple_of(2) && row.is_multiple_of(2));
 
                 if walled {
-                    grid[row * self.width + column] = 'W';
+                    grid[row * size + column] = 'W';
                 }
             }
         }
         grid
     }
+
+    fn remove_destructables_around_users(grid: &mut Grid, player_positions: Vec<Coord>) {
+        for coord in player_positions {
+            coord
+                .square_3x3()
+                .iter()
+                .for_each(|c| grid.clear_destructable(*c))
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::map::factories::grid_factory::GridFactory;
+    use crate::{coord::Coord, map::factories::grid_factory::GridFactory};
 
     #[test]
     fn test_prepare_grid_example() {
@@ -54,18 +67,20 @@ mod tests {
         // 4: W.W.W.W
         // 5: W.....W
         // 6: WWWWWWW
-        let width = 7;
-        let height = 7;
+        let size = 7;
 
-        let factory = GridFactory::new(width, height);
-        let grid = factory.prepare_grid();
+        let grid = GridFactory::new(size, [Coord::from(1, 1), Coord::from(5, 5)].to_vec());
 
-        let expected = vec![
-            'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', '.', '.', '.', '.', '.', 'W', 'W', '.', 'W',
-            '.', 'W', '.', 'W', 'W', '.', '.', '.', '.', '.', 'W', 'W', '.', 'W', '.', 'W', '.',
-            'W', 'W', '.', '.', '.', '.', '.', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W',
+        let expected_char_grid = vec![
+            'W', 'W', 'W', 'W', 'W', 'W', 'W', 
+            'W', ' ', ' ', '.', '.', '.', 'W', 
+            'W', ' ', 'W', '.', 'W', '.', 'W', 
+            'W', '.', '.', '.', '.', '.', 'W', 
+            'W', '.', 'W', '.', 'W', ' ', 'W', 
+            'W', '.', '.', '.', ' ', ' ', 'W', 
+            'W', 'W', 'W', 'W', 'W', 'W', 'W',
         ];
 
-        assert_eq!(grid, expected);
+        assert_eq!(grid.tiles, expected_char_grid);
     }
 }

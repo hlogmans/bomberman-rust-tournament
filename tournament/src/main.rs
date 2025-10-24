@@ -6,7 +6,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use bots::available_bots;
-use runner::factories::game_config_factory::ConfigFactory;
+use runner::{factories::game_config_factory::ConfigFactory};
 use runner::tournament::run_tournament;
 use runner::tournament_result::TournamentResult;
 

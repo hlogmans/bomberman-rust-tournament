@@ -18,6 +18,10 @@ impl Bot for EasyBot {
         format!("{} ({})", self.name, self.id)
     }
 
+    fn id(&self) -> usize {
+        self.id
+    }
+
     fn get_move(&mut self, map: &Map, player_location: Coord) -> Command {
         if !self.nextmoves.is_empty() {
             return self.nextmoves.pop().unwrap();
@@ -113,7 +117,8 @@ impl EasyBot {
     fn get_cell(&self, map: &Map, location: &Coord) -> char {
         *map
             .grid
-            .get(location.row.get() * map.width + location.col.get())
+            .tiles
+            .get(location.row.get() * map.map_settings.size + location.col.get())
             .unwrap_or(&'W')
     }
 }

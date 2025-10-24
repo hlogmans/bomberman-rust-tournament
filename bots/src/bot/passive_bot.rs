@@ -55,8 +55,8 @@ impl PassiveBot {
             (Command::Wait, Some(me)),
         ] {
             if let Some(nc) = neighbor {
-                let idx = nc.row.get() * map.width + nc.col.get();
-                if map.grid[idx] == ' ' && !self.is_danger(map, nc) {
+                let idx = nc.row.get() * map.map_settings.size + nc.col.get();
+                if map.grid.tiles[idx] == ' ' && !self.is_danger(map, nc) {
                     opts.push((cmd, nc));
                 }
             }
@@ -65,8 +65,8 @@ impl PassiveBot {
     }
 
     fn get_best_safe_move(&self, map: &Map, safe: &[(Command, Coord)]) -> Command {
-        let center_row = map.height / 2;
-        let center_col = map.width / 2;
+        let center_row = map.map_settings.size / 2;
+        let center_col = map.map_settings.size / 2;
 
         let best = safe
             .iter()
@@ -88,6 +88,10 @@ impl PassiveBot {
 impl Bot for PassiveBot {
     fn name(&self) -> String {
         format!("{} ({})", self.name, self.id)
+    }
+
+    fn id(&self) -> usize {
+        self.id
     }
 
     fn start_game(&mut self, settings: &MapConfig, bot_id: usize) -> bool {

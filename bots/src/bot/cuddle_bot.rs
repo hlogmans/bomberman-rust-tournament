@@ -38,8 +38,8 @@ impl CuddleBot {
             (Command::Wait, Some(me)),
         ] {
             let idx =
-                neighbor_field.unwrap().row.get() * map.width + neighbor_field.unwrap().col.get();
-            if map.grid[idx] == ' ' && !self.is_danger(map, neighbor_field.unwrap()) {
+                neighbor_field.unwrap().row.get() * map.map_settings.size + neighbor_field.unwrap().col.get();
+            if map.grid.tiles[idx] == ' ' && !self.is_danger(map, neighbor_field.unwrap()) {
                 opts.push(command);
             }
         }
@@ -56,8 +56,8 @@ impl CuddleBot {
             (Some(me)),
         ] {
             let idx =
-                neighbor_field.unwrap().row.get() * map.width + neighbor_field.unwrap().col.get();
-            if map.grid[idx] == 'p' {
+                neighbor_field.unwrap().row.get() * map.map_settings.size + neighbor_field.unwrap().col.get();
+            if map.grid.tiles[idx] == 'p' {
                 return true;
             }
         }
@@ -90,8 +90,8 @@ impl CuddleBot {
             (Command::Wait, Some(me)),
         ] {
             let idx =
-                neighbor_field.unwrap().row.get() * map.width + neighbor_field.unwrap().col.get();
-            if map.grid[idx] == ' ' && self.is_player_this_direction(map, neighbor_field.unwrap()) {
+                neighbor_field.unwrap().row.get() * map.map_settings.size + neighbor_field.unwrap().col.get();
+            if map.grid.tiles[idx] == ' ' && self.is_player_this_direction(map, neighbor_field.unwrap()) {
                 opts.push(command);
             }
         }
@@ -100,7 +100,7 @@ impl CuddleBot {
     }
 
     fn is_player_this_direction(&self, map: &Map, locaction: Coord) -> bool {
-        map.players
+        map.get_alive_players()
             .iter()
             .filter(|player| player.name != "CuddleBot-G (0)")
             .any(|player| {
@@ -116,7 +116,7 @@ impl CuddleBot {
     }
 
     fn is_other_player_gerhard(&self, map: &Map) -> bool {
-        map.players
+        map.get_alive_players()
             .iter()
             .filter(|player| player.name == "GBot-G (0)")
             .any(|_player| true)
@@ -126,6 +126,10 @@ impl CuddleBot {
 impl Bot for CuddleBot {
     fn name(&self) -> String {
         format!("{} ({})", self.name, self.id)
+    }
+
+    fn id(&self) -> usize {
+        self.id
     }
 
     fn start_game(&mut self, settings: &MapConfig, bot_id: usize) -> bool {

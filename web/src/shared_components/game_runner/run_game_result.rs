@@ -47,19 +47,17 @@ pub fn RunGameResult(game_result: GameResult) -> impl IntoView {
                     <div class="text-gray-300">"Round: " {count}</div>
                 </div>
 
-                <Grid game_state=game_state width=game_result.game_settings.width/>
+                <Grid game_state=game_state width=game_result.game_settings.size/>
             </div>
 
             <div class="flex flex-col justify-between bg-gray-800/90 text-white rounded-2xl shadow-xl border border-gray-700 p-8 min-h-[30rem]">
-    <PlayerSection game_result=game_result_clone_payer_section count=count />
-    
-    <div class="flex flex-col items-center gap-6 pt-8">
-        <RoundControlButtons play=play set_play=set_play set_count=set_count />
-        <SpeedControl timer=timer set_timer=set_timer />
-    </div>
-</div>
-
-
+                <PlayerSection game_result=game_result_clone_payer_section count=count game_state=game_state/>
+                
+                <div class="flex flex-col items-center gap-6 pt-8">
+                    <RoundControlButtons play=play set_play=set_play set_count=set_count />
+                    <SpeedControl timer=timer set_timer=set_timer />
+                </div>
+            </div>
         </div>
     }
 }

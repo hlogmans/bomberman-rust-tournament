@@ -26,6 +26,7 @@ use crate::map::structs::map_config::MapConfig;
 #[forbid(unsafe_code)]
 pub trait Bot {
     fn name(&self) -> String;
+    fn id(&self) -> usize;
 
     fn start_game(&mut self, map_settings: &MapConfig, bot_id: usize) -> bool;
 
