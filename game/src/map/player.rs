@@ -1,6 +1,6 @@
 use crate::coord::Coord;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Player {
     pub name: String,
     pub position: Coord,
