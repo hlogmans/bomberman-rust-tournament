@@ -24,15 +24,22 @@ Then run those commands in the terminal:
 
 
 == Run with web gui:
-Install cargo-leptos and add web assembly support:
-- (for linux only) sudo dnf install -y perl pkg-config openssl-devel gcc make
-- cargo install --locked cargo-leptos
-- rustup target add wasm32-unknown-unknown
+With docker:
+    - docker compose up watch
+    or
+    - docker compose up release
 
-Run with hot reload:
-- cd ./web
-- cargo leptos watch
+Without docker:
+    Install cargo-leptos and add web assembly support:
+    - install perl
+        (for fedora linux) sudo dnf install -y perl pkg-config openssl-devel gcc make
+    - cargo install --locked cargo-leptos
+    - rustup target add wasm32-unknown-unknown
 
-Run with better performance:
-- cargo leptos build --release
-- cargo leptos serve --release
+    Run with hot reload (watch does not work on windows):
+    - cd ./web
+    - cargo leptos watch
+
+    Run with better performance:
+    - cargo leptos build --release
+    - cargo leptos serve --release

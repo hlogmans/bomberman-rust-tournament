@@ -1,14 +1,14 @@
 use crate::bot::bot_data::BotData;
 use crate::coord::Coord;
 use crate::game::bomb_processor::BombProcessor;
-use crate::bot::bot::Bot;
+use crate::bot::bot::{BotController};
 use crate::map::player::Player;
 use crate::map::structs::map_config::MapConfig;
 use crate::{game::game_result::GameResult, map::enums::command::Command, map::map::Map};
 
 pub struct Game {
     pub map: Map,
-    bots: Vec<Box<dyn Bot>>,
+    bots: Vec<BotController>,
     pub turn: usize,
     pub player_actions: Vec<Vec<Command>>,
     pub debug_info: Vec<Vec<String>>,
@@ -16,7 +16,7 @@ pub struct Game {
 
 impl Game {
     pub fn build(
-        mut bots: Vec<Box<dyn Bot>>,
+        mut bots: Vec<BotController>,
         map_settings: MapConfig,
         bot_data: Option<Vec<BotData>>,
     ) -> Self {
@@ -32,7 +32,7 @@ impl Game {
     }
 
     pub fn generate_players_from_bots(
-        bots: &Vec<Box<dyn Bot>>,
+        bots: &Vec<BotController>,
         bot_data: Option<Vec<BotData>>,
         size: usize,
     ) -> Vec<Player> {
@@ -52,12 +52,12 @@ impl Game {
             None => bots
                 .iter()
                 .zip(positions)
-                .map(|(bot, position)| Player::new(bot.name(), position, bot.id()))
+                .map(|(bot, position)| Player::new(bot.get_name(), position, bot.get_id()))
                 .collect(),
         }
     }
 
-    pub fn from_map(map: Map, bots: Vec<Box<dyn Bot>>) -> Self {
+    pub fn from_map(map: Map, bots: Vec<BotController>) -> Self {
         let player_count = bots.len();
         Game {
             map,

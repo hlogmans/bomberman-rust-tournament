@@ -80,16 +80,10 @@ impl GerhardBot {
 }
 
 impl Bot for GerhardBot {
-    fn name(&self) -> String {
-        format!("{} ({})", self.name, self.id)
-    }
 
-    fn id(&self) -> usize {
-        self.id
-    }
-
-    fn start_game(&mut self, settings: &MapConfig, bot_id: usize) -> bool {
+    fn start_game(&mut self, settings: &MapConfig, bot_name: String, bot_id: usize) -> bool {
         self.id = bot_id;
+        self.name = bot_name;
         self.map_settings = settings.clone();
         false
     }
