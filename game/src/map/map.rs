@@ -38,7 +38,7 @@ impl Map {
     }
 
     pub(crate) fn kill_at_location(&mut self, location: Coord) {
-        if let Some(player) = self.players.iter_mut().find(|player| player.position == location) {
+        if let Some(player) = self.players.iter_mut().find(|player| player.position.col.get() == location.col.get() && player.position.row.get() == location.row.get()) {
             player.kill();
             self.check_winner();
         }
