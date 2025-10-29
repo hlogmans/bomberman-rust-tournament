@@ -47,10 +47,7 @@ impl MlBot {
     }
 
     fn create_enemy_heatmap(&self, map: &Map) -> Vec<f32> {
-        //let mut heatmap = self.empty_heatmap();
         let mut heatmap = vec![0.01; self.map_settings.size * self.map_settings.size];
-
-
 
         map.get_alive_players()
             .iter()
@@ -88,7 +85,7 @@ impl MlBot {
             heatmap[self.idx(bomb_row, bomb_col)] = bomb_heat;
 
             for &(delta_row, delta_col) in &[(-1, 0), (1, 0), (0, -1), (0, 1)] {
-                for distance in 1..=self.map_settings.bomb_radius {
+                for distance in 1..=self.map_settings.bomb_radius + 1 {
                     let new_row = (bomb_row as isize + delta_row * distance as isize) as usize;
                     let new_col = (bomb_col as isize + delta_col * distance as isize) as usize;
 
@@ -198,6 +195,7 @@ impl MlBot {
                 }
 
                 let new_idx = self.idx(nr, nc);
+                
                 if visited[new_idx] {
                     continue;
                 }
@@ -243,15 +241,14 @@ impl MlBot {
     }
 
 
-    fn decide_move(&mut self, map: &Map, _player_location: Coord) -> Command {
+    fn decide_move(&mut self, map: &Map, player_location: Coord) -> Command {
         let enemy_heatmap = self.propagate_and_normalize(map, self.create_enemy_heatmap(map));
         let bomb_heatmap = self.create_blast_heatmap(map);
         let breakable_heatmap = self.propagate_and_normalize(map, self.create_breakable_heatmap(map));
-        let player_row = _player_location.row.get();
-        let player_col = _player_location.col.get();
+        let player_row = player_location.row.get();
+        let player_col = player_location.col.get();
         let current_index = self.idx(player_row, player_col);
         let escape_path: Option<(Command,usize)> = self.find_escape_path(map, player_row, player_col, &bomb_heatmap);
-
         if bomb_heatmap[current_index] > 0.0 {
             return if let Some((direction, _steps)) = escape_path {
                 direction
@@ -295,11 +292,19 @@ impl MlBot {
                 -999.0
             };
 
+            let bomb_score = -bomb_danger * 5.0;
+            let enemy_score = enemy_pressure * 5.0;
+            let escape_score_final = escape_score * 1.5;
+            let breakable_score = breakable_heat * 1.0;
 
-            let score = -bomb_danger * 5.0
-                + enemy_pressure * 2.0
-                + escape_score * 1.5
-                + breakable_heat * 1.0;
+
+            let mut score = bomb_score
+                + escape_score_final 
+                + breakable_score;
+
+            if !is_wait {
+                score += enemy_score
+            }
 
             if score > best_score {
                 best_score = score;
@@ -308,7 +313,7 @@ impl MlBot {
         }
 
         if bomb_heatmap[current_index] == 0.0 {
-            let enemy_nearby = enemy_heatmap[current_index] > 0.8;
+            let enemy_nearby = enemy_heatmap[current_index] > 0.5;
             let breakable_nearby =  breakable_heatmap[current_index] > 0.3;
 
             if enemy_nearby || breakable_nearby {
@@ -320,7 +325,6 @@ impl MlBot {
 
         best_action
     }
-
 
     #[inline(always)]
     fn empty_heatmap(&self) -> Vec<f32> {
@@ -385,4 +389,5 @@ impl Bot for MlBot {
         let next_move = self.decide_move(map, _player_location);
         next_move
     }
+
 }

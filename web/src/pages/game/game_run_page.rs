@@ -2,7 +2,6 @@ use leptos::prelude::*;
 use leptos_router::hooks::use_query;
 use leptos_router::params::Params;
 use runner::tournament::*;
-use game::bot::bot::{BotController};
 use bots::available_bots;
 use crate::shared_components::game_runner::run_game_result::RunGameResult;
 
