@@ -20,6 +20,7 @@ pub struct GzBot {
     pub id: usize,
     pub debug_info: String,
     current_target: Option<Coord>,
+    fleeing: bool,
     map_settings: MapConfig,
 }
 
@@ -39,6 +40,14 @@ impl TileMap {
         self.map
             .get(coord.row.get())
             .and_then(|row| row.get(coord.col.get()))
+    }
+
+    fn reset(&mut self) {
+        for row in self.map.iter_mut() {
+            for tile in row {
+                tile.reset()
+            }
+        }
     }
 
     fn dijkstra<'a>(&'a self, start: &Tile, goal: &'a Tile) -> Option<(i32, Vec<&'a Tile>)> {
@@ -94,8 +103,7 @@ impl TileMap {
         None
     }
 
-
-    fn nearest_safe_tile(self, start: &Tile) -> Option<(i32, Vec<&Tile>)> {
+    fn nearest_safe_tile(&self, start: &Tile) -> Option<&Tile> {
         let mut dist: HashMap<Coord, i32> = HashMap::new();
         let mut came_from: HashMap<Coord, Coord> = HashMap::new();
         let mut heap = BinaryHeap::new();
@@ -106,23 +114,7 @@ impl TileMap {
         while let Some(Reverse((cost_so_far, current_coord))) = heap.pop() {
             if let Some(current_tile) = self.get(current_coord) {
                 if current_tile.safe {
-                    let mut path = Vec::new();
-                    let mut current = current_tile;
-
-                    while current.coord != start.coord {
-                        path.push(current);
-                        if let Some(&prev_coord) = came_from.get(&current.coord) {
-                            if let Some(prev_tile) = self.get(prev_coord) {
-                                current = prev_tile;
-                            } else {
-                                break; // safety, shouldn't happen
-                            }
-                        } else {
-                            break; // reached the start or path incomplete
-                        }
-                    }
-                    path.reverse();
-                    return Some((cost_so_far, path));
+                    return Some(current_tile);
                 }
             }
 
@@ -176,6 +168,7 @@ impl GzBot {
             id: 0,
             debug_info: "".to_string(),
             current_target: None,
+            fleeing: false,
             map_settings: MapConfig::default(),
         }
     }
@@ -315,23 +308,23 @@ impl GzBot {
         let mut rng = rand::rng();
         let (chosen_coord, chosen_score) = top_tiles_with_score.choose(&mut rng).cloned().unwrap();
 
-        let debug_info = format!(
-            "Top {}, Chosen {} results:\n{}",
-            top_tiles_with_score.len(),
-            format!("{},{}", chosen_coord.row.get(), chosen_coord.col.get()),
-            top_tiles_with_score
-                .iter()
-                .map(|opt| format!(
-                    "[ Position: ({},{}), Score: {} ]",
-                    opt.0.row.get(),
-                    opt.0.col.get(),
-                    opt.1
-                ))
-                .collect::<Vec<_>>()
-                .join("\r\n")
-        );
-
-        self.debug_info = debug_info;
+        // let debug_info = format!(
+        //     "Top {}, Chosen {} results:\n{}",
+        //     top_tiles_with_score.len(),
+        //     format!("{},{}", chosen_coord.row.get(), chosen_coord.col.get()),
+        //     top_tiles_with_score
+        //         .iter()
+        //         .map(|opt| format!(
+        //             "[ Position: ({},{}), Score: {} ]",
+        //             opt.0.row.get(),
+        //             opt.0.col.get(),
+        //             opt.1
+        //         ))
+        //         .collect::<Vec<_>>()
+        //         .join("\r\n")
+        // );
+        //
+        // self.debug_info = debug_info;
 
         return chosen_coord;
     }
@@ -346,21 +339,45 @@ impl Bot for GzBot {
     }
 
     fn get_move(&mut self, map: &Map, player_location: Coord) -> Command {
+        self.debug_info = "test".to_string();
         let mut tile_map = self.generate_tile_map(map);
         if let Some(current_tile) = tile_map.get(player_location) {
             if !current_tile.safe {
+                self.fleeing = true;
+                let possible_safe_tile = tile_map.nearest_safe_tile(&current_tile);
+                if let Some(safe_tile) = possible_safe_tile {
+                    // self.debug_info = format!(
+                    //     "flee to: {},{}  current_tile: {},{}  currently_safe: {}",
+                    //     safe_tile.coord.col.get(),
+                    //     safe_tile.coord.row.get(),
+                    //     current_tile.coord.col.get(),
+                    //     current_tile.coord.row.get(),
+                    //     current_tile.safe
+                    // );
+                    // self.current_target = Some(safe_tile.coord);
+                    tile_map.reset();
+                }
+                else {
 
-                // find nearest safe tile
+                    if self.fleeing {
+                        self.fleeing = false;
+                        self.current_target = None;
+                    }
+                }
             }
         }
+
         if self.current_target.is_none() {
             self.current_target =
                 Some(self.choose_coord_to_move_to(&mut tile_map, player_location));
-            self.debug_info = format!(
-                "target: {},{}",
-                self.current_target.unwrap().col.get(),
-                self.current_target.unwrap().row.get()
-            );
+            // self.debug_info = format!(
+            //     "target: {},{}  , fleeing: {}, current_tile: {}, {}",
+            //     self.current_target.unwrap().col.get(),
+            //     self.current_target.unwrap().row.get(),
+            //     self.fleeing,
+            //     player_location.col.get(),
+            //     player_location.row.get()
+            // );
         }
 
         if let Some(starting_tile) = tile_map.get(player_location) {
@@ -369,15 +386,18 @@ impl Bot for GzBot {
                 if let Some(path) = possible_path {
                     if path.1.len() > 0 {
                         let goal = path.1.first().unwrap();
-                        self.debug_info =
-                            format!("target: {},{}", goal.coord.col.get(), goal.coord.row.get());
+                        // self.debug_info =
+                        //     format!("target: {},{}", goal.coord.col.get(), goal.coord.row.get());
                         return helper::get_command_to_move_to_coord(player_location, goal.coord);
                     }
                     self.current_target = None;
-                    return Command::PlaceBomb;
+                    if !self.fleeing {
+                        return Command::PlaceBomb;
+                    }
                 }
             }
         }
+
         return Command::Wait;
     }
 
