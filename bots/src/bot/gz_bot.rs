@@ -13,6 +13,7 @@ use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap, VecDeque};
 use std::fmt::{Display, Pointer, format};
 use std::io::empty;
+use game::map::bomb::Bomb;
 
 #[derive(Clone)]
 pub struct GzBot {
@@ -50,7 +51,7 @@ impl TileMap {
         }
     }
 
-    fn dijkstra<'a>(&'a self, start: &Tile, goal: &'a Tile) -> Option<(i32, Vec<&'a Tile>)> {
+    fn dijkstra<'a>(&'a self, start: &Tile, goal: &'a Tile, bombs: &Vec<Bomb>, bomb_radius: usize) -> Option<(i32, Vec<&'a Tile>)> {
         let mut dist: HashMap<Coord, i32> = HashMap::new();
         let mut came_from: HashMap<Coord, Coord> = HashMap::new();
         let mut heap = BinaryHeap::new();
@@ -90,7 +91,7 @@ impl TileMap {
 
                 if next_cost < *dist.get(&next_coord).unwrap_or(&i32::MAX) {
                     if let Some(neighbour_tile) = self.get(next_coord) {
-                        if neighbour_tile.cell_type == CellType::Empty {
+                        if neighbour_tile.cell_type == CellType::Empty && helper::is_tile_currently_safe(bombs,neighbour_tile.coord, next_cost as usize, bomb_radius) {
                             dist.insert(next_coord, next_cost);
                             came_from.insert(next_coord, current_coord);
                             heap.push(Reverse((next_cost, next_coord)));
@@ -199,7 +200,7 @@ impl GzBot {
         let mut score = 0;
 
         // Example heuristics:
-        score -= distance as i32;
+        score -= (distance / 5) as i32;
         if tile.safe {
             score += 10
         }
@@ -207,7 +208,7 @@ impl GzBot {
             if let Some(neighbour_tile) = map.get(neighbour_coord) {
                 match neighbour_tile.cell_type {
                     CellType::Destroyable => score += 2,
-                    CellType::Player => score += 5,
+                    CellType::Player => score += 10,
                     _ => {}
                 }
             }
@@ -264,7 +265,6 @@ impl GzBot {
             if helper::is_tile_in_bomb_range(
                 coord,
                 bomb.position,
-                map,
                 self.map_settings.bomb_radius,
             ) {
                 return false;
@@ -308,24 +308,6 @@ impl GzBot {
         let mut rng = rand::rng();
         let (chosen_coord, chosen_score) = top_tiles_with_score.choose(&mut rng).cloned().unwrap();
 
-        // let debug_info = format!(
-        //     "Top {}, Chosen {} results:\n{}",
-        //     top_tiles_with_score.len(),
-        //     format!("{},{}", chosen_coord.row.get(), chosen_coord.col.get()),
-        //     top_tiles_with_score
-        //         .iter()
-        //         .map(|opt| format!(
-        //             "[ Position: ({},{}), Score: {} ]",
-        //             opt.0.row.get(),
-        //             opt.0.col.get(),
-        //             opt.1
-        //         ))
-        //         .collect::<Vec<_>>()
-        //         .join("\r\n")
-        // );
-        //
-        // self.debug_info = debug_info;
-
         return chosen_coord;
     }
 }
@@ -339,30 +321,23 @@ impl Bot for GzBot {
     }
 
     fn get_move(&mut self, map: &Map, player_location: Coord) -> Command {
-        self.debug_info = "test".to_string();
+
         let mut tile_map = self.generate_tile_map(map);
         if let Some(current_tile) = tile_map.get(player_location) {
             if !current_tile.safe {
                 self.fleeing = true;
                 let possible_safe_tile = tile_map.nearest_safe_tile(&current_tile);
                 if let Some(safe_tile) = possible_safe_tile {
-                    // self.debug_info = format!(
-                    //     "flee to: {},{}  current_tile: {},{}  currently_safe: {}",
-                    //     safe_tile.coord.col.get(),
-                    //     safe_tile.coord.row.get(),
-                    //     current_tile.coord.col.get(),
-                    //     current_tile.coord.row.get(),
-                    //     current_tile.safe
-                    // );
-                    // self.current_target = Some(safe_tile.coord);
+
+                    self.current_target = Some(safe_tile.coord);
                     tile_map.reset();
                 }
-                else {
+            }
+            else {
 
-                    if self.fleeing {
-                        self.fleeing = false;
-                        self.current_target = None;
-                    }
+                if self.fleeing {
+                    self.fleeing = false;
+                    self.current_target = None;
                 }
             }
         }
@@ -370,24 +345,18 @@ impl Bot for GzBot {
         if self.current_target.is_none() {
             self.current_target =
                 Some(self.choose_coord_to_move_to(&mut tile_map, player_location));
-            // self.debug_info = format!(
-            //     "target: {},{}  , fleeing: {}, current_tile: {}, {}",
-            //     self.current_target.unwrap().col.get(),
-            //     self.current_target.unwrap().row.get(),
-            //     self.fleeing,
-            //     player_location.col.get(),
-            //     player_location.row.get()
-            // );
+
         }
+
+
+
 
         if let Some(starting_tile) = tile_map.get(player_location) {
             if let Some(goal_tile) = tile_map.get(self.current_target.unwrap()) {
-                let possible_path = tile_map.dijkstra(starting_tile, goal_tile);
+                let possible_path = tile_map.dijkstra(starting_tile, goal_tile, &map.bombs, self.map_settings.bomb_radius);
                 if let Some(path) = possible_path {
                     if path.1.len() > 0 {
                         let goal = path.1.first().unwrap();
-                        // self.debug_info =
-                        //     format!("target: {},{}", goal.coord.col.get(), goal.coord.row.get());
                         return helper::get_command_to_move_to_coord(player_location, goal.coord);
                     }
                     self.current_target = None;
@@ -397,6 +366,8 @@ impl Bot for GzBot {
                 }
             }
         }
+
+
 
         return Command::Wait;
     }

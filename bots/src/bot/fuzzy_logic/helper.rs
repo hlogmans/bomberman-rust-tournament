@@ -1,9 +1,11 @@
 use crate::bot::fuzzy_logic::fuzzy_input::FuzzyInput;
 use crate::bot::fuzzy_logic::manhattan::manhattan;
 use game::coord::Coord;
+use game::map::bomb::Bomb;
 use game::map::cell::CellType;
 use game::map::enums::command::Command;
 use game::map::map::Map;
+use crate::bot::fuzzy_logic::helper;
 
 pub fn get_cell(map: &Map, location: Coord) -> char {
     map.grid.tiles
@@ -86,25 +88,49 @@ pub fn get_enemy_positions(input: FuzzyInput) -> Vec<Coord> {
         .collect()
 }
 
-pub fn is_tile_in_bomb_range(position: Coord, bomb_position: Coord, map: &Map, radius: usize) -> bool {
+pub fn is_tile_in_bomb_range(position: Coord, bomb_position: Coord, radius: usize) -> bool {
     if position == bomb_position {
         return true;
     }
 
     if position.row == bomb_position.row {
-        if position.col.get().abs_diff(bomb_position.col.get()) > radius {
-            return false;
+        if position.col.get().abs_diff(bomb_position.col.get()) <= radius {
+            return true;
         }
     }
 
     if position.col == bomb_position.col {
-        if position.row.get().abs_diff(bomb_position.row.get()) > radius {
-            return false;
+        if position.row.get().abs_diff(bomb_position.row.get()) <= radius {
+            return true;
         }
     }
-    if position.col != bomb_position.col && position.row != bomb_position.row {
-        return false;
+
+    false
+}
+
+pub(crate) fn is_tile_currently_safe(bombs: &Vec<Bomb>, coord: Coord, steps_to_reach_coord: usize, radius:usize) -> bool {
+    if bombs.len() == 0 {
+        return true;
+    }
+    for bomb in bombs.iter(){
+        if !tile_current_safety_from_bomb(coord, steps_to_reach_coord, bomb, radius) {
+            return false
+        }
     }
 
-    true
+
+    return true;
+}
+
+pub fn tile_current_safety_from_bomb(position: Coord, steps_to_reach: usize ,bomb: &Bomb, radius: usize) -> bool {
+    if !is_tile_in_bomb_range(position, bomb.position, radius) {
+        return true;
+    }
+
+    if bomb.timer  > steps_to_reach {
+        return true;
+    }
+
+
+    return false;
 }
