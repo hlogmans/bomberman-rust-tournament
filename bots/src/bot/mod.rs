@@ -1,1 +1,1 @@
-pub mod fuzzy_logic;
+pub mod gz_logic;

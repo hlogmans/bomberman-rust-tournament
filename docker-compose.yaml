@@ -9,7 +9,7 @@ services:
     ports:
       - "3000:3000"
       - "3001:3001"
-    command: ["cargo", "leptos", "watch"]
+    command: [ "cargo", "leptos", "watch" ]
 
 
 
