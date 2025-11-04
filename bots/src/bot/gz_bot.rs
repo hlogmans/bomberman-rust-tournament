@@ -88,7 +88,6 @@ impl GzBot {
         tile_map: &mut TileMap,
         start: Coord,
     ) -> HashMap<Coord, i32> {
-
         let mut queue: VecDeque<(Coord, usize)> = VecDeque::new();
         let mut scores: HashMap<Coord, i32> = HashMap::new();
 
@@ -179,20 +178,28 @@ impl GzBot {
         tile_map: &'a mut TileMap,
         bombs: &Vec<Bomb>,
         player_location: Coord,
+        target_location: Coord,
     ) -> Option<(i32, Vec<&'a Tile>)> {
-        if let Some(starting_tile) = tile_map.get(player_location) {
-            if let Some(goal_tile) = tile_map.get(self.current_target.unwrap()) {
-                let possible_path = tile_map.dijkstra(
-                    starting_tile,
-                    goal_tile,
-                    bombs,
-                    self.map_settings.bomb_radius,
-                );
-                return possible_path;
-            }
+        if let Some(starting_tile) = tile_map.get(player_location) &&
+            let Some(goal_tile) = tile_map.get(target_location) {
+            let possible_path = tile_map.dijkstra(
+                starting_tile,
+                goal_tile,
+                bombs,
+                self.map_settings.bomb_radius,
+            );
+            return possible_path;
         }
 
         return None;
+    }
+
+    fn get_flee_location(&mut self, tile_map: &TileMap, current_tile: &Tile) -> Option<Coord> {
+        let possible_safe_tile = tile_map.nearest_safe_tile(&current_tile);
+        if let Some(safe_tile) = possible_safe_tile {
+            return Some(safe_tile.coord);
+        }
+        None
     }
 }
 
@@ -209,24 +216,25 @@ impl Bot for GzBot {
         if let Some(current_tile) = tile_map.get(player_location) {
             if !current_tile.safe {
                 self.fleeing = true;
-                let possible_safe_tile = tile_map.nearest_safe_tile(&current_tile);
-                if let Some(safe_tile) = possible_safe_tile {
-                    self.current_target = Some(safe_tile.coord);
-                }
+                self.current_target = self.get_flee_location(&tile_map, current_tile)
             } else {
-                if self.fleeing {
-                    self.fleeing = false;
-                    self.current_target = None;
-                }
+                self.fleeing = false;
             }
         }
 
-        if self.current_target.is_none() {
-            self.current_target =
-                Some(self.choose_coord_to_move_to(&mut tile_map, player_location));
-        }
+        if let Some(current_target)
 
-        self.debug_info = format!("{} {}, fleeing: {}", self.current_target.unwrap().col.get(), self.current_target.unwrap().row.get(), self.fleeing);
+            if self.current_target.is_none() {
+                self.current_target =
+                    Some(self.choose_coord_to_move_to(&mut tile_map, player_location));
+            }
+
+        self.debug_info = format!(
+            "{} {}, fleeing: {}",
+            self.current_target.unwrap().col.get(),
+            self.current_target.unwrap().row.get(),
+            self.fleeing
+        );
 
         if let Some(path) = self.try_find_path(&mut tile_map, &map.bombs, player_location) {
             if path.1.len() > 0 {
@@ -238,7 +246,12 @@ impl Bot for GzBot {
                 if let Some(goal_tile) = tile_map.get(self.current_target.unwrap()) {
                     self.current_target = None;
                     if let Some(escape_tile) = tile_map.nearest_safe_tile(goal_tile) {
-                        if let Some(escape_path) = tile_map.dijkstra(goal_tile, escape_tile, &map.bombs, self.map_settings.bomb_radius) {
+                        if let Some(escape_path) = tile_map.dijkstra(
+                            goal_tile,
+                            escape_tile,
+                            &map.bombs,
+                            self.map_settings.bomb_radius,
+                        ) {
                             if escape_path.1.len() <= 3 {
                                 return Command::PlaceBomb;
                             }
