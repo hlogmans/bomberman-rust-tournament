@@ -1,5 +1,5 @@
 use crate::coord::Coord;
-use crate::map::bomb::Bomb;
+use crate::map::bomb::{Bomb};
 use crate::map::cell::CellType;
 use crate::map::enums::command::Command;
 use crate::map::factories::command_factory::CommandFactory;
@@ -57,16 +57,50 @@ impl Map {
     }
 
     pub(crate) fn get_exploding_bombs(&self) -> Vec<Coord> {
-        self.bombs
+        let mut exploding_bombs: Vec<Coord> = self.bombs
             .iter()
             .filter(|bomb| bomb.timer == 0)
             .map(|bomb| bomb.position)
-            .collect()
+            .collect();
+
+        let chained: Vec<Coord> = self.bombs
+            .iter()
+            .filter(|bomb| bomb.timer > 0)
+            .filter(|bomb| exploding_bombs.iter().any(|exploding| 
+                self.location_in_bomb_range(bomb.position, *exploding)
+            ))
+            .map(|bomb| bomb.position)
+            .collect();
+
+        exploding_bombs.extend(chained);
+
+        exploding_bombs
     }
 
+    fn location_in_bomb_range(&self, position: Coord, bomb_position: Coord) -> bool {
+        if position == bomb_position {
+            return true;
+        }
+        if position.row == bomb_position.row {
+            if position.col.get().abs_diff(bomb_position.col.get()) <= self.map_settings.bomb_radius {
+                return true;
+            }
+        }
+        if position.col == bomb_position.col {
+            if position.row.get().abs_diff(bomb_position.row.get()) <= self.map_settings.bomb_radius {
+                return true;
+            }
+        }
+        false
+    }
+
+
+
     pub(crate) fn remove_bomb(&mut self, position: Coord) {
-        self.grid.set_cell(position, CellType::Empty);
-        self.bombs.retain(|bomb| bomb.position != position);
+        if self.grid.cell_type(position) != CellType::Wall{
+            self.grid.set_cell(position, CellType::Empty);
+        }
+        self.remove_bombs_at_location(position);
     }
 
     pub(crate) fn bomb_timer_decrease(&mut self) {
@@ -94,8 +128,15 @@ impl Map {
     pub(crate) fn handle_shrink(&mut self, turn: usize){
         let shrink_turn = turn - self.map_settings.endgame;
         let shrink_location = self.grid.shrink(shrink_turn);
-        self.kill_at_location(shrink_location)
+        self.remove_bombs_at_location(shrink_location);
+        self.kill_at_location(shrink_location);
     }
+
+
+    pub(crate) fn remove_bombs_at_location(&mut self, location: Coord) {
+        self.bombs.retain(|bomb| bomb.position != location);
+    }
+
 
     pub fn get_alive_players(&self) -> Vec<&Player>{
         self.players.iter().filter(|player| player.is_alive()).collect()
