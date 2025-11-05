@@ -10,14 +10,11 @@ impl BombProcessor {
         if exploding_bombs.is_empty() {
             map.explosions = Vec::new();
         }
-        for bomb in &exploding_bombs {
-            map.remove_bomb(*bomb);
-        }
-
-        let affected_tiles = exploding_bombs
-            .into_iter()
-            .flat_map(|bomb| Self::bomb_explosion_locations(bomb, map))
-            .collect::<Vec<_>>();
+        Self::remove_bombs(map, &exploding_bombs);
+        let mut affected_tiles = Self::get_explosion_locations(map, exploding_bombs);
+        let chained_bombs: Vec<Coord> = Self::get_chained_bombs(map, &affected_tiles);
+        Self::remove_bombs(map, &chained_bombs);
+        affected_tiles.extend(Self::get_explosion_locations(map, chained_bombs));
 
         //TODO: find faster solution than cloning
         map.explosions = affected_tiles.clone();
@@ -26,6 +23,26 @@ impl BombProcessor {
             map.grid.clear_destructable(tile);
             map.kill_at_location(tile);
         }
+    }
+
+    fn get_chained_bombs(map: &mut Map, affected_tiles: &Vec<Coord>) -> Vec<Coord> {
+        map.bombs.iter()
+            .filter(|bomb| affected_tiles.iter().any(|explosion| explosion == &bomb.position))
+            .map(|bomb| bomb.position)
+            .collect()
+    }
+
+    fn remove_bombs(map: &mut Map, bomb_locations: &Vec<Coord>){
+        for bomb in bomb_locations {
+            map.remove_bomb(*bomb);
+        }
+    }
+
+    fn get_explosion_locations(map: &mut Map, bomb_locations: Vec<Coord>) -> Vec<Coord>{
+         bomb_locations
+            .into_iter()
+            .flat_map(|bomb| Self::bomb_explosion_locations(bomb, map))
+            .collect::<Vec<_>>()
     }
 
     pub(super) fn bomb_explosion_locations(location: Coord, map: &mut Map) -> Vec<Coord> {
