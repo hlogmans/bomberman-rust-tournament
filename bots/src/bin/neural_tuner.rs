@@ -90,7 +90,7 @@ impl TrainerConfig {
             population: env_or("NEURAL_TRAIN_POPULATION", 16),
             eval_games: env_or("NEURAL_TRAIN_EVAL_GAMES", 64),
             initial_sigma: env_or("NEURAL_TRAIN_SIGMA", 0.08_f32),
-            min_sigma: env_or("NEURAL_TRAIN_MIN_SIGMA", 0.01_f32),
+            min_sigma: env_or("NEURAL_TRAIN_MIN_SIGMA", 0.005_f32),
             sigma_decay: env_or("NEURAL_TRAIN_SIGMA_DECAY", 0.8_f32),
             improvement_threshold: env_or("NEURAL_TRAIN_IMPROVEMENT", 0.01_f32),
             target_win_rate: env_or("NEURAL_TRAIN_TARGET", 0.90_f32),

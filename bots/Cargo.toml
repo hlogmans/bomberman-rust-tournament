@@ -7,15 +7,10 @@ build = "build.rs"
 [lib]
 path = "src/lib.rs"
 
-[[bin]]
-name = "neural_tuner"
-path = "src/bin/neural_tuner.rs"
-
 [dependencies]
 game = { path = "../game" }
 rand = "0.9.2"
 rand_distr = "0.5"
 getrandom = { version = "0.3", default-features = false, features = ["wasm_js"] }
 rayon = "1.10"
-ctrlc = "3.4"
 
