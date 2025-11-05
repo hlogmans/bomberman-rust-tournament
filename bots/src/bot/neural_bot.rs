@@ -12,73 +12,61 @@ use rand::Rng;
 use rand_distr::{Distribution, StandardNormal};
 
 const INPUT_SIZE: usize = 14;
-const HIDDEN1_SIZE: usize = 24;
-const HIDDEN2_SIZE: usize = 16;
+const HIDDEN_SIZE: usize = 8;
 const ACTION_DIM: usize = 6;
 
 #[derive(Clone, Debug)]
 pub struct NeuralWeights {
-    pub w1: [[f32; INPUT_SIZE]; HIDDEN1_SIZE],
-    pub b1: [f32; HIDDEN1_SIZE],
-    pub w2: [[f32; HIDDEN1_SIZE]; HIDDEN2_SIZE],
-    pub b2: [f32; HIDDEN2_SIZE],
-    pub w3: [f32; HIDDEN2_SIZE],
-    pub b3: f32,
+    pub w1: [[f32; INPUT_SIZE]; HIDDEN_SIZE],
+    pub b1: [f32; HIDDEN_SIZE],
+    pub w2: [f32; HIDDEN_SIZE],
+    pub b2: f32,
 }
 
 impl Default for NeuralWeights {
     fn default() -> Self {
         NeuralWeights {
-            w1: [[0.0; INPUT_SIZE]; HIDDEN1_SIZE],
-            b1: [0.0; HIDDEN1_SIZE],
-            w2: [[0.0; HIDDEN1_SIZE]; HIDDEN2_SIZE],
-            b2: [0.0; HIDDEN2_SIZE],
-            w3: [0.0; HIDDEN2_SIZE],
-            b3: 0.0,
-        }
+    w1: [
+        [1.636697, -5.566925, 2.637935, 0.508426, 1.210734, -0.921426, -0.158777, -0.549269, 0.655633, 3.354808, 1.901226, -2.139753, -1.527142, 3.683069],
+        [0.818761, -1.015341, 2.096670, 4.516063, -0.102555, 1.502090, 2.827241, -0.097902, 0.138470, 2.677094, -1.558763, -0.731272, -2.432582, -1.434658],
+        [1.880907, -3.143336, 1.248770, 0.512803, 0.899430, 3.954686, -0.573805, 0.867711, 1.012956, 0.376641, 1.461291, 2.060880, 0.638843, -0.717108],
+        [0.629805, -3.285364, 1.550383, 1.741327, 0.106672, 0.077670, 1.450635, 1.967772, 0.930404, -1.624699, -1.446735, -0.364707, -0.489433, 3.372977],
+        [0.649564, -0.614648, 0.976283, 2.073301, 3.561541, 1.408611, -0.048255, -1.102857, 3.010153, 3.341581, 1.349934, 0.527951, 0.489516, -0.055537],
+        [-1.501313, 0.051317, 0.467069, 1.303629, 0.607126, 5.900764, 0.874830, 1.700493, 2.250430, 2.752131, 0.390350, 0.580959, 0.637349, 0.988749],
+        [0.088445, 0.474600, -1.073446, -0.264090, 2.284349, -3.504639, -0.830103, 1.000875, 1.334680, 0.317586, -0.603167, 0.630220, -0.217786, -0.945765],
+        [1.320456, -0.370618, 0.269190, 2.654348, 0.212224, -0.044618, 3.261870, 0.627540, 1.255572, 3.133081, 1.716217, 1.020740, 1.420485, 1.105901],
+    ],
+    b1: [1.721487, 2.208960, -0.513902, 0.767813, 1.062029, 1.117210, 1.135184, 0.305580],
+    w2: [1.725492, 2.459945, 3.294465, 4.251708, -0.813440, -2.691909, -3.521826, 2.920312],
+    b2: 1.859114,
+}
     }
 }
 
 impl NeuralWeights {
     pub fn random(rng: &mut impl Rng) -> Self {
         let mut weights = Self {
-            w1: [[0.0; INPUT_SIZE]; HIDDEN1_SIZE],
-            b1: [0.0; HIDDEN1_SIZE],
-            w2: [[0.0; HIDDEN1_SIZE]; HIDDEN2_SIZE],
-            b2: [0.0; HIDDEN2_SIZE],
-            w3: [0.0; HIDDEN2_SIZE],
-            b3: 0.0,
+            w1: [[0.0; INPUT_SIZE]; HIDDEN_SIZE],
+            b1: [0.0; HIDDEN_SIZE],
+            w2: [0.0; HIDDEN_SIZE],
+            b2: 0.0,
         };
 
-        // Xavier/He initialization for better gradient flow
-        let scale1 = (2.0 / INPUT_SIZE as f32).sqrt();
         for row in weights.w1.iter_mut() {
             for value in row.iter_mut() {
-                *value = Distribution::<f32>::sample(&StandardNormal, rng) * scale1;
+                *value = Distribution::<f32>::sample(&StandardNormal, rng);
             }
         }
 
         for value in weights.b1.iter_mut() {
-            *value = Distribution::<f32>::sample(&StandardNormal, rng) * 0.1;
+            *value = Distribution::<f32>::sample(&StandardNormal, rng);
         }
 
-        let scale2 = (2.0 / HIDDEN1_SIZE as f32).sqrt();
-        for row in weights.w2.iter_mut() {
-            for value in row.iter_mut() {
-                *value = Distribution::<f32>::sample(&StandardNormal, rng) * scale2;
-            }
+        for value in weights.w2.iter_mut() {
+            *value = Distribution::<f32>::sample(&StandardNormal, rng);
         }
 
-        for value in weights.b2.iter_mut() {
-            *value = Distribution::<f32>::sample(&StandardNormal, rng) * 0.1;
-        }
-
-        let scale3 = (2.0 / HIDDEN2_SIZE as f32).sqrt();
-        for value in weights.w3.iter_mut() {
-            *value = Distribution::<f32>::sample(&StandardNormal, rng) * scale3;
-        }
-
-        weights.b3 = Distribution::<f32>::sample(&StandardNormal, rng) * 0.1;
+        weights.b2 = Distribution::<f32>::sample(&StandardNormal, rng);
         weights
     }
 
@@ -94,21 +82,11 @@ impl NeuralWeights {
             let noise: f32 = Distribution::<f32>::sample(&StandardNormal, rng) * sigma;
             *value += noise;
         }
-        for row in next.w2.iter_mut() {
-            for value in row.iter_mut() {
-                let noise: f32 = Distribution::<f32>::sample(&StandardNormal, rng) * sigma;
-                *value += noise;
-            }
-        }
-        for value in next.b2.iter_mut() {
+        for value in next.w2.iter_mut() {
             let noise: f32 = Distribution::<f32>::sample(&StandardNormal, rng) * sigma;
             *value += noise;
         }
-        for value in next.w3.iter_mut() {
-            let noise: f32 = Distribution::<f32>::sample(&StandardNormal, rng) * sigma;
-            *value += noise;
-        }
-        next.b3 += Distribution::<f32>::sample(&StandardNormal, rng) * sigma;
+        next.b2 += Distribution::<f32>::sample(&StandardNormal, rng) * sigma;
         next
     }
 
@@ -132,109 +110,17 @@ impl NeuralWeights {
             }
             write!(&mut output, "{:.6}", value).unwrap();
         }
-        output.push_str("],\n    w2: [\n");
-        for row in &self.w2 {
-            output.push_str("        [");
-            for (idx, value) in row.iter().enumerate() {
-                if idx > 0 {
-                    output.push_str(", ");
-                }
-                write!(&mut output, "{:.6}", value).unwrap();
-            }
-            output.push_str("],\n");
-        }
-        output.push_str("    ],\n    b2: [");
-        for (idx, value) in self.b2.iter().enumerate() {
+        output.push_str("],\n    w2: [");
+        for (idx, value) in self.w2.iter().enumerate() {
             if idx > 0 {
                 output.push_str(", ");
             }
             write!(&mut output, "{:.6}", value).unwrap();
         }
-        output.push_str("],\n    w3: [");
-        for (idx, value) in self.w3.iter().enumerate() {
-            if idx > 0 {
-                output.push_str(", ");
-            }
-            write!(&mut output, "{:.6}", value).unwrap();
-        }
-        output.push_str("],\n    b3: ");
-        write!(&mut output, "{:.6}", self.b3).unwrap();
+        output.push_str("],\n    b2: ");
+        write!(&mut output, "{:.6}", self.b2).unwrap();
         output.push_str(",\n}\n");
         output
-    }
-
-    pub fn zeros() -> Self {
-        Self {
-            w1: [[0.0; INPUT_SIZE]; HIDDEN1_SIZE],
-            b1: [0.0; HIDDEN1_SIZE],
-            w2: [[0.0; HIDDEN1_SIZE]; HIDDEN2_SIZE],
-            b2: [0.0; HIDDEN2_SIZE],
-            w3: [0.0; HIDDEN2_SIZE],
-            b3: 0.0,
-        }
-    }
-
-    pub fn add_scaled(&mut self, other: &Self, scale: f32) {
-        for i in 0..HIDDEN1_SIZE {
-            for j in 0..INPUT_SIZE {
-                self.w1[i][j] += other.w1[i][j] * scale;
-            }
-            self.b1[i] += other.b1[i] * scale;
-        }
-        for i in 0..HIDDEN2_SIZE {
-            for j in 0..HIDDEN1_SIZE {
-                self.w2[i][j] += other.w2[i][j] * scale;
-            }
-            self.b2[i] += other.b2[i] * scale;
-        }
-        for i in 0..HIDDEN2_SIZE {
-            self.w3[i] += other.w3[i] * scale;
-        }
-        self.b3 += other.b3 * scale;
-    }
-
-    pub fn add_weight_diff(&mut self, from: &Self, to: &Self, scale: f32) {
-        for i in 0..HIDDEN1_SIZE {
-            for j in 0..INPUT_SIZE {
-                self.w1[i][j] += (to.w1[i][j] - from.w1[i][j]) * scale;
-            }
-            self.b1[i] += (to.b1[i] - from.b1[i]) * scale;
-        }
-        for i in 0..HIDDEN2_SIZE {
-            for j in 0..HIDDEN1_SIZE {
-                self.w2[i][j] += (to.w2[i][j] - from.w2[i][j]) * scale;
-            }
-            self.b2[i] += (to.b2[i] - from.b2[i]) * scale;
-        }
-        for i in 0..HIDDEN2_SIZE {
-            self.w3[i] += (to.w3[i] - from.w3[i]) * scale;
-        }
-        self.b3 += (to.b3 - from.b3) * scale;
-    }
-
-    pub fn l1_norm(&self) -> f32 {
-        let mut sum = 0.0_f32;
-        for row in &self.w1 {
-            for &value in row {
-                sum += value.abs();
-            }
-        }
-        for &value in &self.b1 {
-            sum += value.abs();
-        }
-        for row in &self.w2 {
-            for &value in row {
-                sum += value.abs();
-            }
-        }
-        for &value in &self.b2 {
-            sum += value.abs();
-        }
-        for &value in &self.w3 {
-            sum += value.abs();
-        }
-        sum += self.b3.abs();
-        sum
     }
 }
 
@@ -266,32 +152,19 @@ impl NeuralNetwork {
     }
 
     fn forward(&self, input: &[f32; INPUT_SIZE]) -> f32 {
-        let mut hidden1 = [0.0_f32; HIDDEN1_SIZE];
+        let mut hidden = [0.0_f32; HIDDEN_SIZE];
         let weights = self.weights.as_ref();
-        
-        // First hidden layer
-        for i in 0..HIDDEN1_SIZE {
+        for i in 0..HIDDEN_SIZE {
             let mut acc = weights.b1[i];
             for j in 0..INPUT_SIZE {
                 acc += weights.w1[i][j] * input[j];
             }
-            hidden1[i] = acc.max(0.0); // ReLU
+            hidden[i] = acc.max(0.0);
         }
 
-        // Second hidden layer
-        let mut hidden2 = [0.0_f32; HIDDEN2_SIZE];
-        for i in 0..HIDDEN2_SIZE {
-            let mut acc = weights.b2[i];
-            for j in 0..HIDDEN1_SIZE {
-                acc += weights.w2[i][j] * hidden1[j];
-            }
-            hidden2[i] = acc.max(0.0); // ReLU
-        }
-
-        // Output layer
-        let mut output = weights.b3;
-        for i in 0..HIDDEN2_SIZE {
-            output += weights.w3[i] * hidden2[i];
+        let mut output = weights.b2;
+        for i in 0..HIDDEN_SIZE {
+            output += weights.w2[i] * hidden[i];
         }
 
         output
