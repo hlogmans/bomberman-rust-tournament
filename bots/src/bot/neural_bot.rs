@@ -913,5 +913,6 @@ impl Bot for NeuralBot {
 
     fn get_debug_info(&self) -> String {
         //self.last_debug.clone()
+        String::new()
     }
 }
