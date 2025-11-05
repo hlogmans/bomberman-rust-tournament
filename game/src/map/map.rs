@@ -57,44 +57,12 @@ impl Map {
     }
 
     pub(crate) fn get_exploding_bombs(&self) -> Vec<Coord> {
-        let mut exploding_bombs: Vec<Coord> = self.bombs
+        self.bombs
             .iter()
             .filter(|bomb| bomb.timer == 0)
             .map(|bomb| bomb.position)
-            .collect();
-
-        let chained: Vec<Coord> = self.bombs
-            .iter()
-            .filter(|bomb| bomb.timer > 0)
-            .filter(|bomb| exploding_bombs.iter().any(|exploding| 
-                self.location_in_bomb_range(bomb.position, *exploding)
-            ))
-            .map(|bomb| bomb.position)
-            .collect();
-
-        exploding_bombs.extend(chained);
-
-        exploding_bombs
+            .collect()
     }
-
-    fn location_in_bomb_range(&self, position: Coord, bomb_position: Coord) -> bool {
-        if position == bomb_position {
-            return true;
-        }
-        if position.row == bomb_position.row {
-            if position.col.get().abs_diff(bomb_position.col.get()) <= self.map_settings.bomb_radius {
-                return true;
-            }
-        }
-        if position.col == bomb_position.col {
-            if position.row.get().abs_diff(bomb_position.row.get()) <= self.map_settings.bomb_radius {
-                return true;
-            }
-        }
-        false
-    }
-
-
 
     pub(crate) fn remove_bomb(&mut self, position: Coord) {
         if self.grid.cell_type(position) != CellType::Wall{
