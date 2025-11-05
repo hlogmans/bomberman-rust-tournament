@@ -26,21 +26,20 @@ pub struct NeuralWeights {
 impl Default for NeuralWeights {
     fn default() -> Self {
         NeuralWeights {
-    w1: [
-        [1.899219, -5.893246, 2.432044, 0.776812, 0.685814, -1.049690, 0.274820, -1.173057, -0.006399, 2.874616, 1.691780, -2.161335, -2.362385, 3.381953],
-        [0.918873, -0.972618, 1.768669, 4.330416, -0.210214, 2.015018, 2.745572, -0.133044, -0.480350, 2.882585, -1.183914, -0.307070, -2.087369, -0.978785],
-        [1.513522, -2.907862, 0.681818, 0.992379, 0.936058, 3.668817, -0.935750, 1.434866, 1.325791, -0.018076, 1.261538, 2.001373, 0.784948, -1.120914],
-        [1.048096, -3.200260, 1.239704, 1.095914, 0.213587, -0.062029, 1.729111, 1.755840, 1.282042, -1.666431, -1.292865, -0.349793, -0.237259, 3.197119],
-        [0.011309, -0.508955, 1.383091, 1.953367, 3.246720, 1.425128, -0.257833, -1.124222, 3.375181, 3.496791, 0.772228, 0.453803, 0.769709, -0.096251],
-        [-1.876656, -0.256074, -0.341779, 1.701347, 0.821058, 5.320922, 1.033005, 2.067550, 2.429057, 2.716682, 0.485108, 0.532670, 0.705696, 1.467468],
-        [0.340997, 0.258905, -0.912771, -0.390720, 2.122167, -3.584596, -1.199602, 1.401936, 0.703235, 0.707412, -0.458047, 0.126021, -0.922394, -0.504134],
-        [1.558913, -0.539296, 0.072011, 3.211495, -0.042208, 0.024132, 3.363968, 0.379463, 1.118833, 2.853271, 1.607362, 0.938840, 1.199157, 0.931820],
-    ],
-    b1: [1.463838, 2.376585, -0.375304, 0.072147, 1.146905, 0.622927, 0.685537, 0.238264],
-    w2: [1.670629, 2.773675, 3.984245, 3.952461, -0.449249, -2.737534, -3.011246, 3.190310],
-    b2: 1.797052,
-}
-
+            w1: [
+                [1.221764, -5.969182, 1.512148, 1.509554, 0.873109, -2.424352, -1.168005, -2.035934, -1.334949, 2.051314, -0.434139, -0.758388, -3.865476, 3.884604],
+                [1.126146, -0.774946, 1.851027, 3.095861, 0.667033, 1.798017, 3.219400, 0.994139, -0.729272, 4.927049, -0.908351, 0.957579, -2.367908, -0.257261],
+                [0.107567, -1.817632, -1.785874, 2.137390, 2.594644, 4.553799, -1.086048, 1.152672, 1.287305, -1.966155, 1.678669, 1.325045, 0.475965, -1.641485],
+                [0.484024, -4.132235, 1.897053, -0.049422, 0.736401, -1.260188, 3.510522, 1.554826, 2.078860, -0.256199, -1.479522, 0.150586, 1.154267, 3.668173],
+                [-0.468120, -1.033027, 2.446830, 3.336132, 2.509089, 1.064022, 0.095564, -0.216189, 0.683887, 2.248653, 0.140340, 0.932725, 1.783431, -0.264345],
+                [-3.795033, -0.772682, -0.400098, 2.432952, 1.635648, 2.368663, -1.646297, 3.435600, 3.232402, 3.748873, 0.764550, 2.483231, 1.345840, 1.241097],
+                [0.015726, 0.115796, -2.265176, 0.782752, 4.744494, -5.360498, 0.003977, 3.404151, 1.285624, 3.398335, -0.406835, -0.289017, -0.678862, -0.763787],
+                [1.606577, -3.238286, -1.177628, 3.049699, 1.867160, -0.974628, 3.565857, 0.551375, 1.121216, 3.242943, 1.613061, 0.215887, 1.255794, -0.638393],
+            ],
+            b1: [0.908682, 3.899066, 0.801569, 1.124552, 3.345872, 1.475963, 0.783633, 0.702131],
+            w2: [2.142922, 2.501457, 4.230139, 3.436573, -0.495909, -1.676705, -1.939777, 4.350058],
+            b2: 2.354537,
+        }
     }
 }
 
@@ -185,11 +184,96 @@ pub struct NeuralBot {
     next_shrink_location: Option<Coord>,
     network: NeuralNetwork,
     last_debug: String,
+    command_list: Vec<Command>,
+    current_index: usize,
+    looping: bool,
+    initialized: bool,
 }
 
 impl NeuralBot {
     pub fn new() -> Self {
         Self::with_weights(Arc::new(NeuralWeights::default()), "NeuralNemesis".to_string())
+    }
+
+    fn hardcoded_script() -> Vec<Command> {
+        vec![
+            Command::Right,
+            // bomb place and run
+            Command::PlaceBomb,
+            Command::Left,
+            Command::Down,
+            Command::Wait,
+            Command::Up,
+            Command::Right,
+            Command::Right,
+            // bomb place and run
+            Command::PlaceBomb,
+            Command::Left,
+            Command::Left,
+            Command::Down,
+            Command::Up,
+            Command::Right,
+            // bomb place and run
+            Command::PlaceBomb,
+            Command::Left,
+            Command::Down,
+            Command::Wait,
+            Command::Up,
+            Command::Right,
+            Command::Right,
+            Command::Right,
+            Command::Right,
+            // bomb place and run
+            Command::PlaceBomb,
+            Command::Left,
+            Command::Left,
+            Command::Down,
+            Command::Up,
+            Command::Right,
+            Command::Right,
+            // bomb place and run
+            //30
+            Command::PlaceBomb,
+            Command::Left,
+            Command::Left,
+            Command::Down,
+            Command::Up,
+            Command::Right,
+            Command::Right,
+            // bomb place and run
+            Command::PlaceBomb,
+            Command::Left,
+            Command::Left,
+            Command::Down,
+            Command::Up,
+            Command::Right,
+            Command::Right,
+            Command::Down,
+            Command::Down,
+            // bomb place and run
+            Command::PlaceBomb,
+            Command::Up,
+            Command::Up,
+            Command::Left,
+            Command::Right,
+            Command::Down,
+            Command::Down,
+            Command::Down,
+            Command::Down,
+            // bomb place and run
+            Command::PlaceBomb,
+            Command::Up,
+            Command::Up,
+            Command::Right,
+            Command::Left,
+            Command::Down,
+            Command::Down,
+            // bomb place and run
+            Command::PlaceBomb,
+            Command::Up,
+            Command::Up,
+            Command::Left,
+        ]
     }
 
     pub fn with_weights(weights: Arc<NeuralWeights>, label: String) -> Self {
@@ -201,6 +285,10 @@ impl NeuralBot {
             next_shrink_location: None,
             network: NeuralNetwork::new(weights),
             last_debug: String::new(),
+            command_list: vec![],
+            current_index: 0,
+            looping: false,
+            initialized: false,
         }
     }
 
@@ -735,6 +823,37 @@ impl NeuralBot {
     fn out_of_bounds(&self, row: usize, col: usize) -> bool {
         row >= self.map_settings.size || col >= self.map_settings.size
     }
+
+    fn get_correct_init_list(loc: Coord, height: i32, width: i32) -> Vec<Command> {
+        // Start with the base script
+        let mut script = NeuralBot::hardcoded_script();
+
+        // Adjust for row
+        if loc.row.get() >= height as usize / 2 {
+            script = script
+                .into_iter()
+                .map(|c| match c {
+                    Command::Up => Command::Down,
+                    Command::Down => Command::Up,
+                    other => other,
+                })
+                .collect();
+        }
+
+        // Adjust for column
+        if loc.col.get() >= width as usize / 2 {
+            script = script
+                .into_iter()
+                .map(|c| match c {
+                    Command::Left => Command::Right,
+                    Command::Right => Command::Left,
+                    other => other,
+                })
+                .collect();
+        }
+
+        script
+    }
 }
 
 impl Bot for NeuralBot {
@@ -749,6 +868,36 @@ impl Bot for NeuralBot {
     }
 
     fn get_move(&mut self, map: &Map, player_location: Coord) -> Command {
+        if !self.initialized {
+            let height = self.map_settings.size as i32;
+            let width = self.map_settings.size as i32;
+
+            self.command_list = NeuralBot::get_correct_init_list(player_location, height, width);
+
+            self.initialized = true;
+            self.current_index = 0;
+            self.looping = false;
+        }
+
+        //max size game 19x19 = 187x17
+        // Run initial script
+        if !self.looping {
+            if self.current_index < self.command_list.len() 
+            && (self.map_settings.size != 7 || self.current_index < 2)
+            && (self.map_settings.size != 9 || self.current_index < 18) 
+            && (self.map_settings.size != 11 || self.current_index < 18)
+            && (self.map_settings.size != 13 || self.current_index < 27)
+            && (self.map_settings.size != 15 || self.current_index < 51)
+            {
+                let cmd = self.command_list[self.current_index];
+                self.current_index += 1;
+                return cmd;
+            }
+            // Switch to rotation mode
+            self.looping = true;
+            self.current_index = 0;
+        }
+
         if map.map_settings.endgame <= self.turn {
             self.next_shrink_location = calculate_shrink_location(
                 self.turn - map.map_settings.endgame,
