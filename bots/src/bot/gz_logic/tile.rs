@@ -13,8 +13,8 @@ impl Tile {
     pub(crate) fn visit(&mut self) {
         self.visited = true;
     }
-
-    pub(crate) fn reset(&mut self) {
-        self.visited = false;
+    
+    pub(crate) fn to_string(self) -> String {
+        return format!("{}:{}", self.coord.col.get(), self.coord.row.get());
     }
 }

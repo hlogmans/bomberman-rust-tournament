@@ -24,14 +24,6 @@ impl TileMap {
             .and_then(|row| row.get(coord.col.get()))
     }
 
-    pub(crate) fn reset(&mut self) {
-        for row in self.map.iter_mut() {
-            for tile in row {
-                tile.reset()
-            }
-        }
-    }
-
     pub(crate) fn dijkstra<'a>(&'a self, start: &Tile, goal: &'a Tile, bombs: &Vec<Bomb>, bomb_radius: usize) -> Option<(i32, Vec<&'a Tile>)> {
         let mut dist: HashMap<Coord, i32> = HashMap::new();
         let mut came_from: HashMap<Coord, Coord> = HashMap::new();

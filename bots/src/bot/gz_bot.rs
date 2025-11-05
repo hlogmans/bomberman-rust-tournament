@@ -11,12 +11,11 @@ use game::map::structs::map_config::MapConfig;
 use rand::prelude::IndexedRandom;
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap, VecDeque};
-use std::fmt::{Display, Pointer, format};
+use std::fmt::{Display, Pointer};
 use std::io::empty;
 
 #[derive(Clone)]
 pub struct GzBot {
-    pub name: String,
     pub id: usize,
     pub debug_info: String,
     current_target: Option<Coord>,
@@ -27,7 +26,6 @@ pub struct GzBot {
 impl GzBot {
     pub fn new() -> Self {
         GzBot {
-            name: "GeleZuivelBot".to_string(),
             id: 0,
             debug_info: "".to_string(),
             current_target: None,
@@ -46,8 +44,8 @@ impl GzBot {
                 cell_type = CellType::Empty;
             }
             let tile: Tile = Tile {
-                coord: coord,
-                cell_type: cell_type,
+                coord,
+                cell_type,
                 visited: false,
                 safe: self.is_tile_safe(map, coord),
             };
@@ -66,10 +64,8 @@ impl GzBot {
         let mut score = 0;
 
         // Example heuristics:
-        score -= (distance / 10) as i32;
-        if tile.safe {
-            score += 10
-        }
+        // score -= (distance / 6) as i32;
+
         for neighbour_coord in helper::get_neighbour_coords(tile.coord) {
             if let Some(neighbour_tile) = map.get(neighbour_coord) {
                 match neighbour_tile.cell_type {
@@ -84,7 +80,7 @@ impl GzBot {
     }
 
     fn reachable_tiles_with_scores(
-        &self,
+        &mut self,
         tile_map: &mut TileMap,
         start: Coord,
     ) -> HashMap<Coord, i32> {
@@ -175,13 +171,14 @@ impl GzBot {
 
     fn try_find_path<'a>(
         &mut self,
-        tile_map: &'a mut TileMap,
+        tile_map: &'a TileMap,
         bombs: &Vec<Bomb>,
         player_location: Coord,
         target_location: Coord,
     ) -> Option<(i32, Vec<&'a Tile>)> {
-        if let Some(starting_tile) = tile_map.get(player_location) &&
-            let Some(goal_tile) = tile_map.get(target_location) {
+        if let Some(starting_tile) = tile_map.get(player_location)
+            && let Some(goal_tile) = tile_map.get(target_location)
+        {
             let possible_path = tile_map.dijkstra(
                 starting_tile,
                 goal_tile,
@@ -201,12 +198,43 @@ impl GzBot {
         }
         None
     }
+
+    fn is_coord_same(&self, coord_a: Coord, coord_b: Coord) -> bool{
+        return coord_a.row.get() == coord_b.row.get() && coord_a.col.get() == coord_b.col.get();
+    }
+
+    fn move_along_path(&mut self, path: Vec<&Tile>, tile_map: &TileMap, bombs: &Vec<Bomb>, current_target: Coord, player_location: Coord) -> Command {
+
+        if path.len() > 0 {
+            let goal = path.first().unwrap();
+            return helper::get_command_to_move_to_coord(player_location, goal.coord);
+        }
+
+        if self.is_coord_same(current_target, player_location) && !self.fleeing {
+            if let Some(goal_tile) = tile_map.get(current_target) {
+                self.current_target = None;
+                if let Some(escape_tile) = tile_map.nearest_safe_tile(goal_tile) {
+                    if let Some(escape_path) = tile_map.dijkstra(
+                        goal_tile,
+                        escape_tile,
+                        bombs,
+                        self.map_settings.bomb_radius,
+                    ) {
+                        if escape_path.1.len() <= 3 {
+                            return Command::PlaceBomb;
+                        }
+                    }
+                }
+            }
+        }
+        return Command::Wait;
+    }
+
 }
 
 impl Bot for GzBot {
     fn start_game(&mut self, settings: &MapConfig, bot_name: String, bot_id: usize) -> bool {
         self.id = bot_id;
-        self.name = bot_name;
         self.map_settings = settings.clone();
         true
     }
@@ -218,48 +246,44 @@ impl Bot for GzBot {
                 self.fleeing = true;
                 self.current_target = self.get_flee_location(&tile_map, current_tile)
             } else {
+                if self.fleeing {
+                    self.current_target = None;
+                }
                 self.fleeing = false;
             }
         }
 
-        if let Some(current_target)
-
+        if !self.fleeing {
             if self.current_target.is_none() {
-                self.current_target =
-                    Some(self.choose_coord_to_move_to(&mut tile_map, player_location));
+                let coord = self.choose_coord_to_move_to(&mut tile_map, player_location);
+                self.debug_info = format!("{}:{}", coord.col.get(), coord.row.get());
+                self.current_target = Some(coord);
             }
+        }
 
-        self.debug_info = format!(
-            "{} {}, fleeing: {}",
-            self.current_target.unwrap().col.get(),
-            self.current_target.unwrap().row.get(),
-            self.fleeing
-        );
 
-        if let Some(path) = self.try_find_path(&mut tile_map, &map.bombs, player_location) {
-            if path.1.len() > 0 {
-                let goal = path.1.first().unwrap();
-                return helper::get_command_to_move_to_coord(player_location, goal.coord);
+        if self.current_target.is_some() {
+            let current_target = self.current_target.unwrap();
+
+            if let Some(path) = self.try_find_path(&tile_map, &map.bombs, player_location, current_target) {
+                // self.debug_info = "".to_string();
+                // for p in path.1.iter() {
+                //     self.debug_info = format!("{}, {}", self.debug_info, p.clone().clone().to_string() )
+                // }
+                return self.move_along_path(path.1, &tile_map, &map.bombs, current_target, player_location)
             }
+            else {
+                let new_target = self.choose_coord_to_move_to(&mut tile_map, player_location);
+                if let Some(path) = self.try_find_path(&tile_map, &map.bombs, player_location, current_target){
+                    self.current_target = Some(new_target);
+                    return self.move_along_path(path.1, &tile_map, &map.bombs, new_target, player_location)
 
-            if self.current_target.unwrap() == player_location && !self.fleeing {
-                if let Some(goal_tile) = tile_map.get(self.current_target.unwrap()) {
-                    self.current_target = None;
-                    if let Some(escape_tile) = tile_map.nearest_safe_tile(goal_tile) {
-                        if let Some(escape_path) = tile_map.dijkstra(
-                            goal_tile,
-                            escape_tile,
-                            &map.bombs,
-                            self.map_settings.bomb_radius,
-                        ) {
-                            if escape_path.1.len() <= 3 {
-                                return Command::PlaceBomb;
-                            }
-                        }
-                    }
                 }
             }
         }
+
+
+
 
         return Command::Wait;
     }
