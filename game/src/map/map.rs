@@ -38,7 +38,7 @@ impl Map {
     }
 
     pub(crate) fn kill_at_location(&mut self, location: Coord, killed_by: String) {
-        if let Some(player) = self.players.iter_mut().find(|player| player.position.col.get() == location.col.get() && player.position.row.get() == location.row.get()) {
+        if let Some(player) = self.players.iter_mut().find(|player| player.position.col.get() == location.col.get() && player.position.row.get() == location.row.get() && player.is_alive()) {
             player.kill(&killed_by);
             if killed_by == "bomb" {
                 self.grid.set_cell(player.position, CellType::Empty);
