@@ -21,7 +21,7 @@ impl BombProcessor {
 
         for tile in affected_tiles {
             map.grid.clear_destructable(tile);
-            map.kill_at_location(tile);
+            map.kill_at_location(tile, "bomb".to_string());
         }
     }
 

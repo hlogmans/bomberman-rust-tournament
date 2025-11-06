@@ -19,7 +19,7 @@ pub fn speech_texts() -> Vec<&'static str> {
         "Don't panic!",
         "Your bot compiles… right?",
         "Did you know? Rust has no nulls!",
-        "Did you know? NeuralBot was trained by gzBot and mlBot!"
+        "Did you know? NeuralBot was trained by gzBot and mlBot!",
         "Your bot won’t last a lifetime!",
         "Do you have all the traits it takes?",
         "Read. Check. Act. Repeat.",

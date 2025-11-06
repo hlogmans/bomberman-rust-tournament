@@ -37,10 +37,12 @@ impl Map {
         self.players.iter().find(|player| player.id == id)
     }
 
-    pub(crate) fn kill_at_location(&mut self, location: Coord) {
+    pub(crate) fn kill_at_location(&mut self, location: Coord, killed_by: String) {
         if let Some(player) = self.players.iter_mut().find(|player| player.position.col.get() == location.col.get() && player.position.row.get() == location.row.get()) {
-            player.kill();
-            self.grid.set_cell(player.position, CellType::Empty);
+            player.kill(&killed_by);
+            if killed_by == "bomb" {
+                self.grid.set_cell(player.position, CellType::Empty);
+            }
             self.check_winner();
         }
     }
@@ -98,7 +100,7 @@ impl Map {
         let shrink_turn = turn - self.map_settings.endgame;
         let shrink_location = self.grid.shrink(shrink_turn);
         self.remove_bombs_at_location(shrink_location);
-        self.kill_at_location(shrink_location);
+        self.kill_at_location(shrink_location, "shrink".to_string());
     }
 
 

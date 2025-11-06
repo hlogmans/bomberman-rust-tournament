@@ -5,7 +5,8 @@ pub struct Player {
     pub name: String,
     pub position: Coord,
     pub id: usize,
-    alive: bool
+    alive: bool,
+    killed_by: String
 }
 
 impl Player {
@@ -15,6 +16,7 @@ impl Player {
             position,
             id,
             alive: true,
+            killed_by: "".to_string()
         }
     }
 
@@ -26,7 +28,8 @@ impl Player {
         self.alive
     }
 
-    pub(crate) fn kill(&mut self) {
+    pub(crate) fn kill(&mut self, killed_by: &String) {
         self.alive = false;
+        self.killed_by = killed_by.clone();
     }
 }
