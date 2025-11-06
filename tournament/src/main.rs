@@ -14,7 +14,7 @@ fn main() {
     let num_threads = num_cpus::get();
     println!("Running on {num_threads} threads");
 
-    let duration = Duration::from_secs(10);
+    let duration = Duration::from_secs(1200);
     let start_time = Instant::now();
 
     // Per-thread counters
