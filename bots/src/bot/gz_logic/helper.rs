@@ -2,7 +2,6 @@ use game::coord::Coord;
 use game::map::bomb::Bomb;
 use game::map::cell::CellType;
 use game::map::enums::command::Command;
-use game::map::map::Map;
 
 
 pub fn get_command_to_move_to_coord(current_position: Coord, target_position: Coord) -> Command {

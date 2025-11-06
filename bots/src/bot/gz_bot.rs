@@ -8,11 +8,7 @@ use game::map::cell::CellType;
 use game::map::enums::command::Command;
 use game::map::map::Map;
 use game::map::structs::map_config::MapConfig;
-use rand::prelude::IndexedRandom;
-use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashMap, VecDeque};
-use std::fmt::{Display, Pointer};
-use std::io::empty;
+use std::collections::{HashMap, VecDeque};
 
 #[derive(Clone)]
 pub struct GzBot {
@@ -63,29 +59,32 @@ impl GzBot {
     fn score_tile(&self, map: &TileMap, tile: &Tile, distance: usize) -> i32 {
         let mut score = 0;
 
-        // Example heuristics:
-        // score -= (distance / 6) as i32;
-
         for neighbour_coord in helper::get_neighbour_coords(tile.coord) {
             if let Some(neighbour_tile) = map.get(neighbour_coord) {
                 match neighbour_tile.cell_type {
-                    CellType::Destroyable => score += 2,
-                    CellType::Player => score += 10,
+                    CellType::Destroyable => score += 6,
+                    CellType::Player => score += 30,
+                    CellType::Empty => score += 2,
                     _ => {}
                 }
             }
         }
 
-        score
+        if !tile.safe {
+            score -= 50;
+        }
+        score -= distance as i32;
+
+        return score;
     }
 
     fn reachable_tiles_with_scores(
         &mut self,
         tile_map: &mut TileMap,
         start: Coord,
-    ) -> HashMap<Coord, i32> {
+    ) -> HashMap<Coord, (i32, usize)> {
         let mut queue: VecDeque<(Coord, usize)> = VecDeque::new();
-        let mut scores: HashMap<Coord, i32> = HashMap::new();
+        let mut scores: HashMap<Coord, (i32, usize)> = HashMap::new();
 
         for row in tile_map.map.iter_mut() {
             for tile in row.iter_mut() {
@@ -100,7 +99,7 @@ impl GzBot {
             let tile = tile_map.get(current_coord).unwrap();
 
             let score = self.score_tile(&tile_map, tile, dist);
-            scores.insert(current_coord, score);
+            scores.insert(current_coord, (score, dist));
 
             for coord in helper::get_neighbour_coords(tile.coord) {
                 if let Some(neighbour_tile) = tile_map.get_mut(coord) {
@@ -143,32 +142,6 @@ impl GzBot {
         };
     }
 
-    fn choose_coord_to_move_to(&mut self, tile_map: &mut TileMap, player_location: Coord) -> Coord {
-        let mut scores: Vec<(Coord, i32)> = self
-            .reachable_tiles_with_scores(tile_map, player_location)
-            .into_iter()
-            .collect();
-
-        scores.sort_by(|a, b| b.1.cmp(&a.1));
-
-        if scores.is_empty() {
-            return player_location;
-        }
-
-        let highest_score = scores[0].1;
-
-        let top_tiles_with_score: Vec<(Coord, i32)> = scores
-            .iter()
-            .filter(|(_, score)| *score == highest_score)
-            .map(|(coord, score)| (*coord, *score))
-            .collect();
-
-        let mut rng = rand::rng();
-        let (chosen_coord, chosen_score) = top_tiles_with_score.choose(&mut rng).cloned().unwrap();
-
-        return chosen_coord;
-    }
-
     fn try_find_path<'a>(
         &mut self,
         tile_map: &'a TileMap,
@@ -199,41 +172,10 @@ impl GzBot {
         None
     }
 
-    fn is_coord_same(&self, coord_a: Coord, coord_b: Coord) -> bool{
-        return coord_a.row.get() == coord_b.row.get() && coord_a.col.get() == coord_b.col.get();
-    }
-
-    fn move_along_path(&mut self, path: Vec<&Tile>, tile_map: &TileMap, bombs: &Vec<Bomb>, current_target: Coord, player_location: Coord) -> Command {
-
-        if path.len() > 0 {
-            let goal = path.first().unwrap();
-            return helper::get_command_to_move_to_coord(player_location, goal.coord);
-        }
-
-        if self.is_coord_same(current_target, player_location) && !self.fleeing {
-            if let Some(goal_tile) = tile_map.get(current_target) {
-                self.current_target = None;
-                if let Some(escape_tile) = tile_map.nearest_safe_tile(goal_tile) {
-                    if let Some(escape_path) = tile_map.dijkstra(
-                        goal_tile,
-                        escape_tile,
-                        bombs,
-                        self.map_settings.bomb_radius,
-                    ) {
-                        if escape_path.1.len() <= 3 {
-                            return Command::PlaceBomb;
-                        }
-                    }
-                }
-            }
-        }
-        return Command::Wait;
-    }
-
 }
 
 impl Bot for GzBot {
-    fn start_game(&mut self, settings: &MapConfig, bot_name: String, bot_id: usize) -> bool {
+    fn start_game(&mut self, settings: &MapConfig, _bot_name: String, bot_id: usize) -> bool {
         self.id = bot_id;
         self.map_settings = settings.clone();
         true
@@ -254,38 +196,76 @@ impl Bot for GzBot {
         }
 
         if !self.fleeing {
-            if self.current_target.is_none() {
-                let coord = self.choose_coord_to_move_to(&mut tile_map, player_location);
-                self.debug_info = format!("{}:{}", coord.col.get(), coord.row.get());
-                self.current_target = Some(coord);
+            if let Some(current_tile) = tile_map.get(player_location) {
+                let mut high_value_adjacent = false;
+                for n in helper::get_neighbour_coords(current_tile.coord) {
+                    if let Some(t) = tile_map.get(n) {
+                        if t.cell_type == CellType::Destroyable || t.cell_type == CellType::Player {
+                            high_value_adjacent = true;
+                            break;
+                        }
+                    }
+                }
+
+                if high_value_adjacent {
+                    if let Some(escape_tile) = tile_map.nearest_safe_tile(current_tile) {
+                        if let Some((_cost, escape_path)) = tile_map.dijkstra(
+                            current_tile,
+                            escape_tile,
+                            &map.bombs,
+                            self.map_settings.bomb_radius,
+                        ) {
+                            if escape_path.len() <= 4 {
+                               
+                                return Command::PlaceBomb;
+                            }
+                        }
+                    }
+                }
             }
         }
 
+        // Score and sort all possible moves
+        let mut scored_moves: Vec<(Coord, i32, usize)> = self
+            .reachable_tiles_with_scores(&mut tile_map, player_location)
+            .into_iter()
+            .map(|(coord, (score, dist))| (coord, score, dist))
+            .collect();
 
-        if self.current_target.is_some() {
-            let current_target = self.current_target.unwrap();
-
-            if let Some(path) = self.try_find_path(&tile_map, &map.bombs, player_location, current_target) {
-                // self.debug_info = "".to_string();
-                // for p in path.1.iter() {
-                //     self.debug_info = format!("{}, {}", self.debug_info, p.clone().clone().to_string() )
-                // }
-                return self.move_along_path(path.1, &tile_map, &map.bombs, current_target, player_location)
+        scored_moves.sort_by(|a, b| {
+            if a.1 != b.1 {
+                b.1.cmp(&a.1)
+            } else {
+                a.2.cmp(&b.2)
             }
-            else {
-                let new_target = self.choose_coord_to_move_to(&mut tile_map, player_location);
-                if let Some(path) = self.try_find_path(&tile_map, &map.bombs, player_location, current_target){
-                    self.current_target = Some(new_target);
-                    return self.move_along_path(path.1, &tile_map, &map.bombs, new_target, player_location)
+        });
 
+        for (target, score, dist) in scored_moves {
+            if target == player_location {
+                continue;
+            }
+
+            if let Some(path) = self.try_find_path(&tile_map, &map.bombs, player_location, target) {
+                if path.1.len() > 0 {
+
+                    return helper::get_command_to_move_to_coord(player_location, path.1[0].coord);
+                }
+            }
+        }
+
+        if let Some(current_tile) = tile_map.get(player_location) {
+            for n in helper::get_neighbour_coords(current_tile.coord) {
+                if let Some(t) = tile_map.get(n) {
+                    if t.cell_type == CellType::Empty && t.safe {
+
+                        return helper::get_command_to_move_to_coord(player_location, t.coord);
+                    }
                 }
             }
         }
 
 
-
-
-        return Command::Wait;
+        Command::Wait
     }
 
     fn get_debug_info(&self) -> String {
