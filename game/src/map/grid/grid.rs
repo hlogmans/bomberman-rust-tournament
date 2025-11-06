@@ -55,7 +55,7 @@ impl Grid {
             self.set_wall(shrink_location);
             shrink_location
         } else {
-            panic!("No valid shrink location found for shrink {}", shrink_turn);
+            panic!("No valid shrink location found for shrink {} - {}", shrink_turn, self.size);
         }
     }
 

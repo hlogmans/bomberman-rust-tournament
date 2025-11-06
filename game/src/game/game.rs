@@ -10,6 +10,7 @@ pub struct Game {
     pub map: Map,
     bots: Vec<BotController>,
     pub turn: usize,
+    max_turn: usize,
     pub player_actions: Vec<Vec<Command>>,
     pub debug_info: Vec<Vec<String>>,
 }
@@ -59,10 +60,13 @@ impl Game {
 
     pub fn from_map(map: Map, bots: Vec<BotController>) -> Self {
         let player_count = bots.len();
+        let inner_size = map.map_settings.size - 2;
+        let max_turn = map.map_settings.endgame + (inner_size * inner_size);
         Game {
             map,
             bots,
             turn: 0,
+            max_turn: max_turn,
             player_actions: vec![Vec::new(); player_count],
             debug_info: vec![Vec::new(); player_count],
         }
@@ -86,6 +90,9 @@ impl Game {
         }
     }
     pub fn run_round(&mut self, replay_commands: Option<&Vec<Vec<Command>>>) {
+        if self.turn >= self.max_turn {
+            panic!("Something went terribly wrong ")
+        }
         for player_id in self.map.get_alive_players_ids() {
             let command = if let Some(replay) = replay_commands {
                 replay[player_id][self.turn]
