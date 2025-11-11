@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use crate::bot::bot_data::BotData;
 use crate::map::structs::map_config::MapConfig;
@@ -12,6 +14,7 @@ pub struct GameResult {
     pub debug_data: Vec<Vec<String>>,
     pub game_settings: MapConfig,
     pub rounds: usize,
+    pub score: usize,
     pub bots: Vec<BotData>,
 }
 
@@ -27,7 +30,33 @@ impl GameResult {
             debug_data: game.debug_info.clone(),
             game_settings,
             rounds: game.turn,
+            score: GameResult::calculate_score(game),
             bots: bot_data
         }
+    }
+
+    fn calculate_score(game: &Game) -> usize {
+        let mut score: usize = game.max_turn - game.turn;
+        let mut killers: HashMap<usize, usize> = HashMap::new();
+
+        for player in &game.map.players {
+            score += game.map.map_settings.size * match player.reason_killed.as_str() {
+                "suicide" => 10,
+                "bomb" => {
+                    let mut bomb_score = 15;
+                    if let Some(kill_count) = killers.get_mut(&player.killed_by) {
+                        *kill_count += 1;
+                        bomb_score += 5 * *kill_count;
+                    } else {
+                        killers.insert(player.killed_by, 0);
+                    }
+                    bomb_score
+                }
+                "shrink" => 3,
+                _ => 0,
+            };
+        }
+
+        score
     }
 }

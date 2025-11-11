@@ -1,4 +1,4 @@
-use crate::{coord::{Coord, ValidCoord},map::{cell::CellType, map::Map}};
+use crate::{coord::{Coord, ValidCoord},map::{grid::cell::CellType, map::Map}};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Direction {

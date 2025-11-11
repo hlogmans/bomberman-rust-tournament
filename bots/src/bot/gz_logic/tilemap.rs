@@ -2,7 +2,7 @@ use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap};
 use game::coord::Coord;
 use game::map::bomb::Bomb;
-use game::map::cell::CellType;
+use game::map::grid::cell::CellType;
 use crate::bot::gz_logic::helper;
 use crate::bot::gz_logic::tile::Tile;
 

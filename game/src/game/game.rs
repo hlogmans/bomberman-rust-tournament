@@ -1,6 +1,5 @@
 use crate::bot::bot_data::BotData;
 use crate::coord::Coord;
-use crate::game::bomb_processor::BombProcessor;
 use crate::bot::bot::{BotController};
 use crate::map::player::Player;
 use crate::map::structs::map_config::MapConfig;
@@ -10,7 +9,7 @@ pub struct Game {
     pub map: Map,
     bots: Vec<BotController>,
     pub turn: usize,
-    max_turn: usize,
+    pub max_turn: usize,
     pub player_actions: Vec<Vec<Command>>,
     pub debug_info: Vec<Vec<String>>,
 }
@@ -101,7 +100,7 @@ impl Game {
             };
             self.map.try_execute_command(player_id, command);
         }
-        BombProcessor::process(&mut self.map);
+        self.map.process_bombs();
         if self.map.map_settings.endgame <= self.turn {
             self.map.handle_shrink(self.turn);
         }

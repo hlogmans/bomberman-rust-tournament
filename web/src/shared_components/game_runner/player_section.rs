@@ -38,10 +38,19 @@ pub fn PlayerSection(game_result: GameResult, count: ReadSignal<usize>, game_sta
                                                 {format!("{:?}", command)}
                                             </span>
                                         </p>
-                                        {if !debug_info.is_empty() {
+                                        {if player.is_alive() && !debug_info.is_empty() {
                                             view! {
                                                 <p class="font-mono text-xs text-gray-400 bg-gray-800/50 rounded px-2 py-1">
                                                     {debug_info.to_string()}
+                                                </p>
+                                            }.into_any()
+                                        } else {
+                                            view! {}.into_any()
+                                        }}
+                                        {if !player.is_alive() {
+                                            view! {
+                                                <p class="font-mono text-xs text-gray-400 bg-gray-800/50 rounded px-2 py-1">
+                                                    {player.reason_killed.to_string()}
                                                 </p>
                                             }.into_any()
                                         } else {

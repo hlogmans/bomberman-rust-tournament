@@ -5,7 +5,7 @@ use std::sync::Arc;
 use game::bot::bot::Bot;
 use game::coord::Coord;
 use game::map::enums::command::Command;
-use game::map::grid::shrink::calculate_shrink_location;
+use game::map::shrink::calculate_shrink_location;
 use game::map::map::Map;
 use game::map::structs::map_config::MapConfig;
 use rand::Rng;

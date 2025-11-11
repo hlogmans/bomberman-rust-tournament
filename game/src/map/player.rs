@@ -1,3 +1,5 @@
+use std::usize;
+
 use crate::coord::Coord;
 
 #[derive(Clone, Debug)]
@@ -6,7 +8,8 @@ pub struct Player {
     pub position: Coord,
     pub id: usize,
     alive: bool,
-    killed_by: String
+    pub reason_killed: String,
+    pub killed_by: usize
 }
 
 impl Player {
@@ -16,7 +19,8 @@ impl Player {
             position,
             id,
             alive: true,
-            killed_by: "".to_string()
+            reason_killed: "".to_string(),
+            killed_by: usize::MAX
         }
     }
 
@@ -28,8 +32,13 @@ impl Player {
         self.alive
     }
 
-    pub(crate) fn kill(&mut self, killed_by: &String) {
+    pub(crate) fn kill(&mut self, reason_killed: &String, killed_by: usize) {
         self.alive = false;
-        self.killed_by = killed_by.clone();
+        if killed_by == self.id {
+            self.reason_killed = "suicide".to_string()
+        }else {
+            self.reason_killed = reason_killed.clone();
+        }
+        self.killed_by = killed_by;
     }
 }

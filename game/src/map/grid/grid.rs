@@ -1,6 +1,4 @@
-use crate::map::{cell::CellType, grid::shrink::calculate_shrink_location};
-
-use crate::coord::Coord;
+use crate::{coord::Coord, map::grid::cell::CellType};
 
 pub struct Grid {
     pub tiles: Vec<char>,
@@ -47,15 +45,6 @@ impl Grid {
         if position.is_valid(self.size, self.size) {
             let idx = self.cell_index(&position);
             self.tiles[idx] = cell_type.as_char();
-        }
-    }
-
-    pub(crate) fn shrink(&mut self, shrink_turn: usize) -> Coord {
-        if let Some(shrink_location) = calculate_shrink_location(shrink_turn, self.size) {
-            self.set_wall(shrink_location);
-            shrink_location
-        } else {
-            panic!("No valid shrink location found for shrink {}", shrink_turn);
         }
     }
 
