@@ -44,6 +44,7 @@ pub fn RunGameResult(game_result: GameResult) -> impl IntoView {
             <div class="flex flex-col items-center gap-4 text-white p-6">
                 <div class="text-center space-y-1">
                     <p class="text-xl font-semibold">"Winner: " {game_result.winner}</p>
+                    <div class="text-gray-300">"Score: " {game_result.score}</div>
                     <div class="text-gray-300">"Round: " {count}</div>
                 </div>
 

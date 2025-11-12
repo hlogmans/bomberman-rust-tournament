@@ -4,7 +4,7 @@ use crate::bot::gz_logic::tilemap::TileMap;
 use game::bot::bot::Bot;
 use game::coord::{Col, Coord, Row};
 use game::map::bomb::Bomb;
-use game::map::cell::CellType;
+use game::map::grid::cell::CellType;
 use game::map::enums::command::Command;
 use game::map::map::Map;
 use game::map::structs::map_config::MapConfig;

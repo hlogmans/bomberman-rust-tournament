@@ -1,5 +1,5 @@
 
-use crate::{coord::Coord, map::grid::grid::Grid};
+use crate::{coord::Coord, map::grid::{cell::CellType, grid::Grid}};
 
 pub struct GridFactory {
 }
@@ -24,7 +24,7 @@ impl GridFactory {
     pub fn new(size: usize, player_locations: Vec<Coord>) -> Grid {
         let tiles = Self::generate_grid(size);
         let mut grid = Grid::new(tiles, size);
-        Self::remove_destructables_around_users(&mut grid, player_locations);
+        Self::add_players(&mut grid, player_locations);
         grid
     }
 
@@ -43,12 +43,13 @@ impl GridFactory {
         grid
     }
 
-    fn remove_destructables_around_users(grid: &mut Grid, player_positions: Vec<Coord>) {
+    fn add_players(grid: &mut Grid, player_positions: Vec<Coord>) {
         for coord in player_positions {
             coord
                 .square_3x3()
                 .iter()
-                .for_each(|c| grid.clear_destructable(*c))
+                .for_each(|c| grid.clear_destructable(*c));
+            grid.set_cell(coord, CellType::Player);
         }
     }
 }
@@ -73,11 +74,11 @@ mod tests {
 
         let expected_char_grid = vec![
             'W', 'W', 'W', 'W', 'W', 'W', 'W', 
-            'W', ' ', ' ', '.', '.', '.', 'W', 
+            'W', 'P', ' ', '.', '.', '.', 'W', 
             'W', ' ', 'W', '.', 'W', '.', 'W', 
             'W', '.', '.', '.', '.', '.', 'W', 
             'W', '.', 'W', '.', 'W', ' ', 'W', 
-            'W', '.', '.', '.', ' ', ' ', 'W', 
+            'W', '.', '.', '.', ' ', 'P', 'W', 
             'W', 'W', 'W', 'W', 'W', 'W', 'W',
         ];
 

@@ -1,5 +1,5 @@
 use game::coord::Coord;
-use game::map::cell::CellType;
+use game::map::grid::cell::CellType;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Tile {

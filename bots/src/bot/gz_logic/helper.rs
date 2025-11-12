@@ -1,6 +1,6 @@
 use game::coord::Coord;
 use game::map::bomb::Bomb;
-use game::map::cell::CellType;
+use game::map::grid::cell::CellType;
 use game::map::enums::command::Command;
 
 

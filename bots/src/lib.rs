@@ -69,7 +69,6 @@ mod tests {
             "GerhardBot",
             "PassiveBot",
             "RandomBot",
-            "ScoutBot",
         ];
 
         for expected in expected_bots {

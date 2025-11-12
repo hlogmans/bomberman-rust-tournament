@@ -1,4 +1,4 @@
-use crate::map::cell::CellType;
+use crate::map::grid::cell::CellType;
 use crate::map::commands::traits::player_command::PlayerCommand;
 use crate::map::map::Map;
 
@@ -7,7 +7,7 @@ pub struct PlaceBomb;
 impl PlayerCommand for PlaceBomb {
     fn try_execute(&self, map: &mut Map, player_index: usize) {
         let pos = map.players[player_index].position;
-        map.add_bomb(pos);
+        map.add_bomb(pos, player_index);
         map.grid.set_cell(pos, CellType::Bomb);
     }
 }
