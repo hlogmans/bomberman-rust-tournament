@@ -121,3 +121,70 @@ impl Game {
         new_command
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::bot::bot::{BotController, Bot};
+    use crate::map::structs::map_config::MapConfig;
+    use crate::map::enums::command::Command;
+    use crate::coord::Coord;
+
+    struct DummyBot {
+        name: String,
+    }
+
+    impl DummyBot {
+        fn new() -> Self {
+            Self { name: "dummy".to_string() }
+        }
+    }
+
+    impl Bot for DummyBot {
+        fn start_game(&mut self, _map_settings: &MapConfig, bot_name: String, _bot_id: usize) -> bool {
+            self.name = bot_name;
+            true
+        }
+
+        fn get_move(&mut self, _map: &Map, _player_location: Coord) -> Command {
+            Command::Wait
+        }
+    }
+
+    #[test]
+    fn test_run_round_records_actions_and_increments_turn() {
+        //Arrange
+        let map_settings = MapConfig { size: 7, ..Default::default() };
+        let bots = vec![
+            BotController::new(Box::new(DummyBot::new()), "bot1".to_string()),
+            BotController::new(Box::new(DummyBot::new()), "bot2".to_string()),
+        ];
+        let mut game = Game::build(bots, map_settings, None);
+        
+        //Act
+        game.run_round(None);
+
+        //Assert
+        let alive_ids = game.map.get_alive_players_ids();
+        for id in alive_ids {
+            assert_eq!(game.player_actions[id].len(), 1);
+            assert_eq!(game.debug_info[id].len(), 1);
+            assert!(matches!(game.player_actions[id][0], Command::Wait));
+        }
+        assert_eq!(game.turn, 1);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_run_round_panics_when_turn_too_large() {
+        //Arrange
+        let map_settings = MapConfig { size: 7, ..Default::default() };
+        let bots = vec![BotController::new(Box::new(DummyBot::new()), "bot1".to_string())];
+        let mut game = Game::build(bots, map_settings, None);
+        game.turn = game.max_turn;
+
+        //Act
+        game.run_round(None);
+    }
+}
