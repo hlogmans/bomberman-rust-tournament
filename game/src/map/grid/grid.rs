@@ -176,7 +176,7 @@ mod tests {
         //Arrange
         let grid = Grid::new(vec![' '; 5 * 5], 5);
 
-        //Arrange & Assert
+        //Act & Assert
         assert_eq!(grid.can_move_to(Coord::from(5, 5)), false);
         assert_eq!(grid.can_move_to(Coord::from(10, 0)), false);
     }
