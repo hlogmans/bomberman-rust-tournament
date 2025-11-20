@@ -1,0 +1,5 @@
+[tools]
+tailwindcss = "4.1.13"
+
+[watch]
+watch = ["src", "../bots/src"]

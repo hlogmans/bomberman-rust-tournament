@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 use gloo_timers::future::sleep;
 use wasm_bindgen_futures::spawn_local;
-use runner::tournament::*;
+use tournament::tournament::*;
 use std::time::Duration;
 use game::game::game_result::GameResult;
 
@@ -51,7 +51,7 @@ pub fn RunGameResult(game_result: GameResult) -> impl IntoView {
                 <Grid game_state=game_state width=game_result.game_settings.size/>
             </div>
 
-            <div class="flex flex-col justify-between bg-gray-800/90 text-white rounded-2xl shadow-xl border border-gray-700 p-8 min-h-[30rem]">
+            <div class="flex flex-col justify-between bg-gray-800/90 text-white rounded-2xl shadow-xl border border-gray-700 p-8 min-h-120">
                 <PlayerSection game_result=game_result_clone_payer_section count=count game_state=game_state/>
                 
                 <div class="flex flex-col items-center gap-6 pt-8">

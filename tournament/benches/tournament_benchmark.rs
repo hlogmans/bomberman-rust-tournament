@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use bots::available_bots;
-use runner::tournament;
-use runner::tournament::prepare_bots;
+use tournament::tournament;
+use crate::tournament::prepare_bots;
 
 fn tournament_benchmark(c: &mut Criterion) {
     let mut config = Criterion::default()

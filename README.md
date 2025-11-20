@@ -43,3 +43,17 @@ Without docker:
     Run with better performance:
     - cargo leptos build --release
     - cargo leptos serve --release
+
+
+    
+cargo install trunk
+rustup target add wasm32-unknown-unknown
+
+start backend
+cargo run -p backend --release
+
+start web
+trunk serve --open
+
+start cli 
+cargo run --release
