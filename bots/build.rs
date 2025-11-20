@@ -24,7 +24,7 @@ fn main() {
         for entry in entries.flatten() {
             let path = entry.path();
             if let Some(file_name) = path.file_name().and_then(|s| s.to_str()) {
-                if file_name.ends_with(".rs") && file_name != "mod.rs" {
+                if file_name.ends_with(".rs") && file_name != "mod.rs" && file_name != "template_bot.rs" {
                     let module_name = file_name.trim_end_matches(".rs");
                     let struct_name = snake_to_pascal(module_name);
                     bot_info.push((module_name.to_string(), struct_name));

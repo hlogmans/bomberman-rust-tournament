@@ -3,9 +3,11 @@ members = [
     "bots",
     "game",
     "tournament",
-]
-exclude = ["web"]
-default-members = ["tournament"]
+    "cli",
+    "backend", 
+    "web"]
+default-members = ["cli"]
+resolver = "3"
 
 [workspace.metadata.clippy]
 deny = ["unsafe_code"]
