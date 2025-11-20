@@ -3,3 +3,7 @@ tailwindcss = "4.1.13"
 
 [watch]
 watch = ["src", "../bots/src"]
+
+[serve]
+addresses = ["0.0.0.0"]  # The address to serve on.
+port = 3000

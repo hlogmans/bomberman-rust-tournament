@@ -8,7 +8,7 @@ use crate::shared_components::game_runner::loading::Loading;
 #[component]
 pub fn TournamentPage() -> impl IntoView {
     let data = LocalResource::new(move || async move {
-        let response = Request::get("http://localhost:3500/tournament/run")
+        let response = Request::get("http://localhost:3200/tournament/run")
             .mode(RequestMode::Cors) 
             .send()
             .await

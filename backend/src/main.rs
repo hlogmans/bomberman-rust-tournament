@@ -9,7 +9,7 @@ use crate::router::create_router;
 #[tokio::main]
 async fn main() {
     let host = "0.0.0.0";
-    let port = 3500;
+    let port = 3200;
 
     let app: Router = create_router()
         .layer(CorsLayer::new().allow_origin(Any)); 
