@@ -9,6 +9,7 @@ use game::map::structs::map_config::MapConfig;
 pub struct CuddleBot {
     name: String,
     id: usize,
+    debug_info: String,
     map_settings: MapConfig,
 }
 
@@ -23,6 +24,7 @@ impl CuddleBot {
         CuddleBot {
             name: "CuddleBot".to_string(),
             id: 0,
+            debug_info: "".to_string(),
             map_settings: MapConfig::default(),
         }
     }
@@ -79,7 +81,7 @@ impl CuddleBot {
         })
     }
 
-    fn go_to_player(&self, map: &Map, me: Coord) -> Vec<Command> {
+    fn go_to_player(&mut self, map: &Map, me: Coord) -> Vec<Command> {
         let mut opts = Vec::new();
 
         for &(command, neighbor_field) in &[
@@ -99,10 +101,10 @@ impl CuddleBot {
         opts
     }
 
-    fn is_player_this_direction(&self, map: &Map, locaction: Coord) -> bool {
+    fn is_player_this_direction(&mut self, map: &Map, locaction: Coord) -> bool {
         map.get_alive_players()
             .iter()
-            .filter(|player| player.name != "CuddleBot-G (0)")
+            .filter(|player| !player.name.contains("CuddleBot"))
             .any(|player| {
                 let same_row = player.position.row.get() == locaction.row.get();
                 let same_col = player.position.col.get() == locaction.col.get();
@@ -115,10 +117,19 @@ impl CuddleBot {
             })
     }
 
+    fn all_player_names_string(&self, map: &Map) -> String {
+        map.get_alive_players()
+            .iter()
+            .filter(|p| p.name != self.name)
+            .map(|p| p.name.clone())
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+
     fn is_other_player_gerhard(&self, map: &Map) -> bool {
         map.get_alive_players()
             .iter()
-            .filter(|player| player.name == "GBot-G (0)")
+            .filter(|player| player.name.contains("GerhardBot"))
             .any(|_player| true)
     }
 }
@@ -133,6 +144,10 @@ impl Bot for CuddleBot {
     }
 
     fn get_move(&mut self, map: &Map, me: Coord) -> Command {
+        self.debug_info = format!(
+            "Players: {}",
+            self.all_player_names_string(map)
+        );
         if self.is_other_player_gerhard(map) {
             return Command::PlaceBomb;
         }
@@ -159,5 +174,9 @@ impl Bot for CuddleBot {
 
         // Drink beer
         Command::Wait
+    }
+
+    fn get_debug_info(&self) -> String {
+        return self.debug_info.clone();
     }
 }
